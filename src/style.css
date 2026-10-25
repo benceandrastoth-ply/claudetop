@@ -1490,3 +1490,20 @@ svg .wizard .wz-star { animation: twinkle 1.6s ease-in-out infinite; }
 svg .wizard .wz-star:nth-of-type(2n) { animation-delay: 0.8s; }
 @keyframes twinkle { 50% { opacity: 0.25; } }
 #claude.waiting svg .astronaut .as-light { animation-duration: 0.3s; }
+
+/* ---------- hats on the extra Claudes ---------- */
+.buddy.hat-hard .hat.hard,
+.buddy.hat-propeller .hat.propeller,
+.buddy.hat-miner .hat.miner,
+.buddy.hat-cowboy .hat.cowboy,
+.buddy.hat-wizard .hat.wizard,
+.buddy.hat-pirate .hat.pirate,
+.buddy.hat-astronaut .hat.astronaut,
+.buddy.hat-ninja .hat.ninja,
+.buddy.hat-crown .hat.crown,
+.buddy.hat-chef .hat.chef { display: inline; }
+.buddy.hat-crown .cape { display: inline; }
+.buddy.hat-ninja svg .arm, .buddy.hat-ninja svg .legs-a rect, .buddy.hat-ninja svg .legs-b rect { fill: #2a2b33; }
+.buddy.hat-astronaut svg .arm, .buddy.hat-astronaut svg .legs-a rect, .buddy.hat-astronaut svg .legs-b rect { fill: #f3f5f8; }
+.buddy.hat-on .bubble { bottom: 96px; }
+.buddy.hat-wizard .bubble, .buddy.hat-chef .bubble { bottom: 108px; }

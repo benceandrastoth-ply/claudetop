@@ -33,7 +33,7 @@ the session or its title looks like a Claude Code title (`✳ topic`, `◑ topic
   or friends (browser tab or app) and Claude bursts into tears for a few seconds. Once a minute at most.
 - **Click to jump**: click the little Claude to bring up the terminal or editor its session runs in.
 - **One Claude per session**: other active sessions get smaller Claudes of their own colour; click
-  one to jump to that session.
+  one to jump to that session. Each wears a hat of its own (scroll over it for another).
 - **Props**: while working, Claude holds a magnifying glass (searching), a pencil (editing), a little
   terminal (running commands) or a book (reading). After 10 minutes on one task it drinks coffee,
   after 30 it crawls into a sleeping bag.

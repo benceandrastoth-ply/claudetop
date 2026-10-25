@@ -2037,11 +2037,37 @@ function updateBuddies(now = Date.now()) {
     b.s = s;
     const st = buddyState(s, now);
     for (const k of ['working', 'waiting', 'done', 'nocredit', 'resting']) b.el.classList.toggle(k, k === st);
-    const text = b.hover ? `${projectOf(s)}: ${LABELS[s.state] || s.state}` : { waiting: 'Needs you!', done: 'Done!' }[st] || '';
+    // A chef notices when 47 turns up dressed as one.
+    if (b.hat === 'chef' && disguise === 'chef' && !b.metChef && !quiet()) {
+      b.metChef = true;
+      b.line = pick(['Nice hat, colleague.', 'Hey! That’s my look!', 'New in the kitchen?']);
+      b.lineUntil = Date.now() + 3500;
+    }
+    if (disguise !== 'chef') b.metChef = false;
+    const line = b.lineUntil > Date.now() ? b.line : null;
+    const text = b.hover ? `${projectOf(s)}: ${LABELS[s.state] || s.state}` : line || { waiting: 'Needs you!', done: 'Done!' }[st] || '';
     if (b.bubble.textContent !== text) b.bubble.textContent = text;
     b.bubble.classList.toggle('show', !!text);
   }
   for (const id of sessionColors.keys()) if (!sessions.some((s) => s.id === id)) sessionColors.delete(id);
+  for (const id of sessionHats.keys()) if (!sessions.some((s) => s.id === id)) sessionHats.delete(id);
+}
+
+// Each extra Claude gets a hat of its own: random, not one anybody else is wearing, and kept
+// for as long as its session lives. Scroll over it for another.
+const sessionHats = new Map(); // session id -> hat
+function hatFor(id) {
+  if (!sessionHats.has(id)) {
+    const taken = new Set([config.hat, ...sessionHats.values()]);
+    const free = HATS.filter((h) => !taken.has(h));
+    sessionHats.set(id, pick(free.length ? free : HATS));
+  }
+  return sessionHats.get(id);
+}
+
+function dressBuddy(b) {
+  for (const h of HATS) b.el.classList.toggle(`hat-${h}`, h === b.hat);
+  b.el.classList.add('hat-on');
 }
 
 function makeBuddy(s) {
@@ -2053,7 +2079,19 @@ function makeBuddy(s) {
   node.style.setProperty('--clay', color);
   document.body.appendChild(node);
   const { min, max } = walkRange();
-  const b = { el: node, bubble: node.querySelector('.bubble'), x: min + Math.random() * (max - min), target: null, dir: 1, pauseUntil: 0, color, s, hover: false };
+  const b = { el: node, bubble: node.querySelector('.bubble'), x: min + Math.random() * (max - min), target: null, dir: 1, pauseUntil: 0, color, s, hover: false, hat: hatFor(s.id), line: null, lineUntil: 0 };
+  dressBuddy(b);
+  let lastWheel = 0;
+  node.addEventListener('wheel', (e) => {
+    const now = performance.now();
+    if (now - lastWheel < 350) return;
+    lastWheel = now;
+    const i = HATS.indexOf(b.hat);
+    b.hat = HATS[(i + (Math.sign(e.deltaY) || 1) + HATS.length) % HATS.length];
+    sessionHats.set(b.s.id, b.hat);
+    poof(b.x + WIDTH / 2, floorY(b.x + WIDTH / 2) - 50);
+    dressBuddy(b);
+  }, { passive: true });
   setTimeout(() => node.classList.remove('arrive'), 500);
   node.addEventListener('mouseenter', () => {
     b.hover = true;
