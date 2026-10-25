@@ -110,7 +110,8 @@ p { margin: 0 0 1em; }
 }
 .download:hover { transform: translateY(-2px); box-shadow: 0 8px 0 var(--accent-shade), 0 14px 28px rgba(0, 0, 0, 0.35); }
 .download:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--accent-shade); }
-.download-meta { margin-top: 18px; color: var(--muted); font-size: 0.95rem; }
+.download-meta { margin-top: 18px; color: var(--muted); font-size: 0.95rem; max-width: 40em; }
+.download-meta a { color: var(--paper); }
 .download-small { font-size: 1.1rem; padding: 12px 22px 10px; margin-top: 8px; }
 
 .try {
@@ -301,6 +302,16 @@ body.agent-mode {
 .doc li { margin-bottom: 0.7em; }
 .doc a { color: var(--accent); }
 .doc .updated { color: var(--muted); }
+.doc pre {
+  margin: 0 0 1.2em;
+  padding: 14px 16px;
+  background: var(--taskbar);
+  border-left: 3px solid var(--accent);
+  overflow-x: auto;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.doc pre code { background: none; padding: 0; }
 
 .foot { padding: 40px 0 56px; background: var(--taskbar); border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
 .foot p { margin: 0 0 6px; }

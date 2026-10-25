@@ -14,6 +14,9 @@ const HOSTS = new Set([
   'windowsterminal', 'openconsole', 'conhost', 'cmd', 'powershell', 'pwsh', 'code', 'code - insiders',
   'cursor', 'windsurf', 'wezterm-gui', 'alacritty', 'hyper', 'tabby', 'mintty', 'warp', 'ghostty',
   'idea64', 'pycharm64', 'webstorm64', 'rider64', 'goland64', 'claude',
+  // Linux (process names are cut to 15 characters there)
+  'gnome-terminal-', 'gnome-terminal', 'kgx', 'ptyxis', 'konsole', 'kitty', 'xterm', 'tilix', 'terminator',
+  'xfce4-terminal', 'mate-terminal', 'lxterminal', 'qterminal', 'foot', 'rio', 'blackbox', 'code-oss', 'zed',
 ]);
 // Claude Code titles its tab "<status glyph> <topic>", e.g. "✳ Fix login" or "◑ Refactor".
 const CLAUDE_TITLE = /^[^\p{L}\p{N}\s]\s|claude/iu;
@@ -54,6 +57,9 @@ const baseName = (n) => String(n).toLowerCase().replace(/\.exe$/, '');
 
 // Is the window in front the one this session runs in?
 function isFocused(s) {
+  // Can't tell (Linux without xprop, or a native Wayland window): assume you're looking, so
+  // "done" times out instead of waiting forever.
+  if (focus.available === false) return true;
   const chain = (s.chain || []).map((entry) => {
     const [pid, ...name] = entry.split(':');
     return { pid: Number(pid), name: baseName(name.join(':')) };
@@ -1161,6 +1167,9 @@ function segmentIndex(x) {
   return layout.segments.findIndex((s) => center >= s.left && center < s.right);
 }
 
+const IS_LINUX = window.claudetop.platform === 'linux';
+let lastRectSent = 0;
+
 let last = performance.now();
 function tick(t) {
   const dt = Math.min(0.1, (t - last) / 1000);
@@ -1232,6 +1241,21 @@ function tick(t) {
   const below = burrowing ? Math.max(0, 4 + ground - bottom) : 0;
   el.style.clipPath = below > 0 ? `inset(-400px -400px ${below}px -400px)` : '';
   el.style.transform = walker.rot ? `rotate(${walker.rot}deg)` : '';
+  // Linux can't forward mouse movement through the window, so tell main where Claude is.
+  if (IS_LINUX && t - lastRectSent > 80) {
+    lastRectSent = t;
+    const r = el.getBoundingClientRect();
+    window.claudetop.claudeRect({ x: window.screenX + r.left, y: window.screenY + r.top, w: r.width, h: r.height });
+    // Everything visible: Claude plus room above for the hat, bubble and hover info, and every
+    // effect (flying hats, the TV, holes, notes...).
+    const pad = 18;
+    const rects = [{ x: r.left - 120 - pad, y: r.top - 150, w: r.width + 240 + 2 * pad, h: r.height + 150 + pad }];
+    for (const node of fx.children) {
+      const b = node.getBoundingClientRect();
+      if (b.width && b.height) rects.push({ x: b.left - pad, y: b.top - pad, w: b.width + 2 * pad, h: b.height + 2 * pad });
+    }
+    window.claudetop.shape(rects);
+  }
   requestAnimationFrame(tick);
 }
 

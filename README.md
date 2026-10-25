@@ -51,6 +51,12 @@ Windows. Uninstalling from Windows Settings removes the hooks again.
 The installer isn't code-signed, so Windows SmartScreen may say "Windows protected your PC":
 click **More info → Run anyway**.
 
+## Linux
+
+AppImage and .deb builds are attached to every release (built by `.github/workflows/linux.yml`
+when a release is published). See `website/linux.html` for install steps. It works best on X11;
+on Wayland and WSL it can't see other apps' windows, so "done" times out instead of waiting.
+
 ## Build the installer
 
 ```sh

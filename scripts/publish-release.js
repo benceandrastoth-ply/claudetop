@@ -1,8 +1,9 @@
-// Publishes the installer from the last `npm run dist`.
+// Publishes the installer from the last `npm run dist`, everywhere, in one go:
 //   npm run release -- --notes "First change; Second change"
-// Creates a GitHub Release (v<version>) with the installer attached, then adds (or updates) the
-// version at the top of website/releases.json so the site's download buttons point to it.
-// Commit and push afterwards to update the website.
+// 1. Creates the GitHub Release (v<version>) with the Windows installer attached. Publishing it
+//    starts .github/workflows/linux.yml, which builds the AppImage and .deb and attaches them.
+// 2. Puts the version at the top of website/releases.json with all download links.
+// 3. Commits and pushes the release list, which redeploys the website.
 // --local skips GitHub and serves the installer from website/downloads/ instead.
 
 const crypto = require('crypto');
@@ -39,6 +40,7 @@ fs.copyFileSync(installer, staged);
 const data = fs.readFileSync(installer);
 
 let file = `downloads/${fileName}`;
+let linux = null;
 if (!local) {
   if (!repo) throw new Error('Set "repository" in package.json (github:owner/name).');
   const gh = fs.existsSync('C:/Program Files/GitHub CLI/gh.exe') ? 'C:/Program Files/GitHub CLI/gh.exe' : 'gh';
@@ -57,7 +59,11 @@ if (!local) {
       stdio: 'inherit',
     });
   }
-  file = `https://github.com/${repo}/releases/download/${tag}/${fileName}`;
+  const base = `https://github.com/${repo}/releases/download/${tag}`;
+  file = `${base}/${fileName}`;
+  // Built and attached by the Linux workflow a few minutes after the release is published
+  // (names follow "artifactName" in package.json).
+  linux = { appimage: `${base}/claudetop-${version}-x86_64.AppImage`, deb: `${base}/claudetop-${version}-amd64.deb` };
 }
 
 const now = new Date();
@@ -66,6 +72,7 @@ const entry = {
   version,
   date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`, // local date
   file,
+  ...(linux ? { linux } : {}),
   size: data.length,
   sha256: crypto.createHash('sha256').update(data).digest('hex'),
   notes: releaseNotes,
@@ -79,5 +86,13 @@ fs.writeFileSync(listFile, JSON.stringify(updated, null, 2) + '\n');
 fs.writeFileSync(path.join(site, 'releases.js'), `window.RELEASES = ${JSON.stringify(updated, null, 2)};\n`);
 
 console.log(`Published ${version} (${(data.length / 1048576).toFixed(1)} MB): ${file}`);
-if (!local) console.log('Now commit and push website/releases.* to update the site.');
 if (!entry.notes.length) console.log('No release notes yet: add them with --notes "First; Second".');
+
+// Put it on the website: commit and push the release list (the Pages workflow deploys it).
+if (!local) {
+  const git = (...args) => execFileSync('git', args, { cwd: root, stdio: 'inherit' });
+  git('add', 'website/releases.json', 'website/releases.js');
+  git('commit', '-m', `Release ${version}`);
+  git('push');
+  console.log(`Website updated. The Linux build is now running: https://github.com/${repo}/actions`);
+}

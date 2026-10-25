@@ -58,6 +58,22 @@ function apply(command) {
   writeSettings(settings);
 }
 
+// The command our hooks currently run (null if not installed).
+function installedCommand() {
+  try {
+    const hooks = readSettings().hooks || {};
+    for (const g of hooks.Stop || []) for (const h of g.hooks || []) if (isOurs(h)) return h.command;
+  } catch {}
+  return null;
+}
+
+// Re-point the hooks at the app if it moved (e.g. an AppImage in a new folder), without
+// rewriting settings.json when nothing changed.
+function refreshHooks(command) {
+  const current = installedCommand();
+  if (current && current !== `${command} ${MARKER}`) installHooks(command);
+}
+
 function hooksInstalled() {
   try {
     const hooks = readSettings().hooks || {};
@@ -67,4 +83,4 @@ function hooksInstalled() {
   }
 }
 
-module.exports = { SETTINGS, MARKER, installHooks, uninstallHooks, hooksInstalled };
+module.exports = { SETTINGS, MARKER, installHooks, uninstallHooks, hooksInstalled, refreshHooks };

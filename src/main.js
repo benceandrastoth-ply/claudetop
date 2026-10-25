@@ -4,17 +4,43 @@ if (process.argv.includes('--claudetop-hook')) {
   return;
 }
 
-const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen } = require('electron');
+const { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, screen } = require('electron');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const hooksSetup = require('./hooks-setup');
 
-// The installed app's hooks call back into this exe; a dev checkout uses node.
+const isLinux = process.platform === 'linux';
+const linux = isLinux ? require('./platform-linux') : null;
+if (isLinux) app.commandLine.appendSwitch('enable-transparent-visuals');
+
+const REPORT_JS = path.join(__dirname, '..', 'hooks', 'report.js');
+
+// How to launch this app from outside: the installed exe/AppImage, or electron + this folder.
+function appCommand(...args) {
+  const extra = args.length ? ` ${args.join(' ')}` : '';
+  if (!app.isPackaged) return `"${process.execPath}" "${app.getAppPath()}"${extra}`;
+  if (isLinux) return `"${process.env.APPIMAGE || process.execPath}" --no-sandbox${extra}`;
+  return `"${process.execPath.replace(/\\/g, '/')}"${extra}`;
+}
+
+// The installed app's hooks call back into this exe (or plain node on Linux, if it's there);
+// a dev checkout uses node.
 function hookCommand() {
-  if (app.isPackaged) return `"${process.execPath.replace(/\\/g, '/')}"`;
-  return `node "${path.join(__dirname, '..', 'hooks', 'report.js').replace(/\\/g, '/')}"`;
+  if (!app.isPackaged) return `node "${REPORT_JS.replace(/\\/g, '/')}"`;
+  if (isLinux) return linux.hookCommand(appCommand(), REPORT_JS);
+  return appCommand();
+}
+
+function startsAtLogin() {
+  if (isLinux) return linux.startAtLogin();
+  return app.getLoginItemSettings(loginItem()).openAtLogin;
+}
+
+function setStartsAtLogin(on) {
+  if (isLinux) linux.setStartAtLogin(on, appCommand());
+  else app.setLoginItemSettings({ ...loginItem(), openAtLogin: on });
 }
 
 // Setup flags used by the installer and uninstaller.
@@ -34,8 +60,8 @@ if (SETUP_FLAGS.some((f) => process.argv.includes(f)) || hatArg) {
     }
     if (has('--install-hooks')) hooksSetup.installHooks(hookCommand());
     if (has('--uninstall-hooks')) hooksSetup.uninstallHooks();
-    if (has('--start-with-windows')) app.setLoginItemSettings({ ...loginItem(), openAtLogin: true });
-    if (has('--no-start-with-windows')) app.setLoginItemSettings({ ...loginItem(), openAtLogin: false });
+    if (has('--start-with-windows')) setStartsAtLogin(true);
+    if (has('--no-start-with-windows')) setStartsAtLogin(false);
   } catch {}
   app.exit(0);
   return;
@@ -58,6 +84,7 @@ let config = {
   hat: 'none', // 'none' | 'hard' | 'propeller' | 'miner' | 'agent47'
   dance: 'apps', // 'off' | 'apps' (music apps only) | 'any' (anything playing, browsers too)
   tv: true, // sit down and watch a little TV while you watch videos
+  setupDone: false, // Linux: the first-launch question has been asked (Windows asks in the installer)
   preview: null,
 };
 let focus = { pid: 0, name: '', title: '' };
@@ -73,6 +100,7 @@ const BLOCKLIST =
   '\\b(porn\\w*|xxx|nsfw|hentai|nhentai|e-hentai|rule ?34|onlyfans|fansly|xvideos|xnxx|xhamster|redtube|' +
   'youporn|spankbang|eporner|hqporner|brazzers|motherless|chaturbate|stripchat|bongacams|livejasmin|' +
   'camsoda|myfreecams|cam4)(?![a-z0-9])'; // not \b, so "NSFW_GIF" still counts
+// Process names (on Linux, matched as prefixes: "firefox-bin", "vivaldi-bin", "chromium-browse").
 const BROWSERS = [
   'chrome', 'msedge', 'firefox', 'brave', 'opera', 'vivaldi', 'arc', 'librewolf', 'waterfox',
   'zen', 'floorp', 'chromium', 'thorium', 'yandex', 'iexplore',
@@ -155,9 +183,29 @@ function watchSessions() {
 }
 
 // ---------- foreground window ----------
-// A long-lived PowerShell helper reports which window is in front.
+// Linux: xprop/playerctl polling in-process (platform-linux.js).
+function watchFocusLinux() {
+  focusWatcher = linux.startWatcher({
+    lockIn: config.lockIn,
+    blocklist: BLOCKLIST,
+    browsers: BROWSERS,
+    onFocus: (f) => {
+      focus = f;
+      if (win) win.webContents.send('focus', focus);
+    },
+    onMedia: (m) => {
+      media = m;
+      if (win) win.webContents.send('media', media);
+    },
+    onLockIn: (id, windowRect, tabRect) => startLockIn(id, parseRect(windowRect), parseRect(tabRect)),
+  });
+}
+
+// Windows: a long-lived PowerShell helper reports which window is in front.
 function watchFocus() {
-  if (process.platform !== 'win32' || app.isQuitting) return;
+  if (app.isQuitting) return;
+  if (isLinux) return watchFocusLinux();
+  if (process.platform !== 'win32') return;
   // Passed inline so it works from inside the packaged app archive.
   const script = fs
     .readFileSync(path.join(__dirname, 'focus-watch.ps1'), 'utf8')
@@ -207,7 +255,8 @@ function watchFocus() {
 function parseRect(s) {
   const n = String(s || '').split(',').map(Number);
   if (n.length !== 4 || n.some((v) => !Number.isFinite(v)) || n[2] <= n[0] || n[3] <= n[1]) return null;
-  return screen.screenToDipRect(null, { x: n[0], y: n[1], width: n[2] - n[0], height: n[3] - n[1] });
+  const rect = { x: n[0], y: n[1], width: n[2] - n[0], height: n[3] - n[1] };
+  return process.platform === 'win32' ? screen.screenToDipRect(null, rect) : rect;
 }
 
 // The helper found an NSFW tab: cover every screen so Claude can get to it, and let the
@@ -231,6 +280,10 @@ function startLockIn(hwnd, windowRect, tabRect) {
 function closeLockedTab() {
   if (!lockInJob || lockInJob.closed) return;
   lockInJob.closed = true;
+  if (isLinux) {
+    if (focusWatcher) focusWatcher.closeTab(lockInJob.hwnd);
+    return;
+  }
   try { fs.writeFileSync(CMD_FILE, `close ${lockInJob.hwnd}`); } catch {}
 }
 
@@ -248,7 +301,7 @@ function finishLockIn() {
 function restartFocusWatcher() {
   const old = focusWatcher;
   focusWatcher = null;
-  if (old) old.kill();
+  if (old) (isLinux ? old.stop() : old.kill());
   watchFocus();
 }
 
@@ -260,12 +313,17 @@ function targetDisplay() {
 
 // A strip along the bottom of the chosen monitor, or across all of them during a panic run.
 // The renderer gets each monitor's floor so Claude stands on the right taskbar everywhere.
+// Under WSL, Linux sees the whole screen but the Windows taskbar is drawn on top of it,
+// so stand on the taskbar instead of behind it.
+const WSL_TASKBAR = isLinux && /microsoft/i.test(os.release()) ? 48 : 0;
+const floorOf = (d) => d.workArea.y + d.workArea.height - WSL_TASKBAR;
+
 function placeWindow() {
   const home = targetDisplay();
   const displays = spanAll || fullScreen ? screen.getAllDisplays() : [home];
   const left = Math.min(...displays.map((d) => d.workArea.x));
   const right = Math.max(...displays.map((d) => d.workArea.x + d.workArea.width));
-  const floors = displays.map((d) => d.workArea.y + d.workArea.height);
+  const floors = displays.map(floorOf);
   const bottom = Math.max(...floors);
   const top = fullScreen ? Math.min(...displays.map((d) => d.bounds.y)) : Math.min(...floors) - STRIP_HEIGHT;
   win.setBounds({ x: left, y: top, width: right - left, height: bottom - top });
@@ -273,7 +331,7 @@ function placeWindow() {
   const segment = (d) => ({
     left: d.workArea.x - left,
     right: d.workArea.x + d.workArea.width - left,
-    ground: bottom - (d.workArea.y + d.workArea.height),
+    ground: bottom - floorOf(d),
   });
   const all = screen.getAllDisplays();
   win.webContents.send('layout', {
@@ -306,7 +364,8 @@ function createWindow() {
   });
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true);
-  win.setIgnoreMouseEvents(true, { forward: true });
+  if (IS_WSL) win.setShape([{ x: 0, y: 0, width: 1, height: 1 }]); // until the page reports its shapes
+  else win.setIgnoreMouseEvents(true, { forward: true });
   placeWindow();
   win.loadFile(path.join(__dirname, 'index.html'));
   win.webContents.on('did-finish-load', () => {
@@ -445,10 +504,10 @@ function menuTemplate() {
       },
     },
     {
-      label: 'Start with Windows',
+      label: isLinux ? 'Start at login' : 'Start with Windows',
       type: 'checkbox',
-      checked: app.getLoginItemSettings(loginItem()).openAtLogin,
-      click: (item) => app.setLoginItemSettings({ ...loginItem(), openAtLogin: item.checked }),
+      checked: startsAtLogin(),
+      click: (item) => setStartsAtLogin(item.checked),
     },
     { type: 'separator' },
     { label: 'Quit', click: () => app.quit() },
@@ -538,9 +597,83 @@ function trayIcon() {
 }
 
 // ---------- ipc ----------
+// Clicks pass through the window except on Claude. Windows forwards mouse movement to the page
+// so it can tell when the pointer reaches Claude; Linux can't, so there the main process
+// watches the cursor and compares it with where the page says Claude is.
+let claudeRect = null; // screen coordinates, Linux only
+let pageWantsMouse = false; // hovering or dragging
+let mouseEnabled = false;
+
 ipcMain.on('set-ignore-mouse', (_e, ignore) => {
-  if (win) win.setIgnoreMouseEvents(ignore, { forward: true });
+  pageWantsMouse = !ignore;
+  if (win && !isLinux) win.setIgnoreMouseEvents(ignore, { forward: true });
 });
+
+// WSL (WSLg) hides click-through windows completely. There, the window is instead cut down to
+// the shapes the page reports (Claude, its bubble, flying hats, the TV...), so the rest of the
+// screen stays clickable.
+const IS_WSL = isLinux && /microsoft/i.test(os.release());
+let lastShape = '';
+ipcMain.on('shape', (_e, rects) => {
+  if (!win || !IS_WSL) return;
+  const shape = rects.map((r) => ({
+    x: Math.max(0, Math.floor(r.x)), y: Math.max(0, Math.floor(r.y)),
+    width: Math.ceil(r.w), height: Math.ceil(r.h),
+  })).filter((r) => r.width > 0 && r.height > 0);
+  const key = JSON.stringify(shape);
+  if (key === lastShape) return;
+  lastShape = key;
+  win.setShape(shape.length ? shape : [{ x: 0, y: 0, width: 1, height: 1 }]);
+});
+
+ipcMain.on('claude-rect', (_e, rect) => {
+  claudeRect = rect;
+});
+
+function watchCursorLinux() {
+  if (IS_WSL) return; // the window shape does the job there
+  setInterval(() => {
+    if (!win || !claudeRect) return;
+    const p = screen.getCursorScreenPoint();
+    const r = claudeRect;
+    const over = p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
+    const want = over || pageWantsMouse;
+    if (want !== mouseEnabled) {
+      mouseEnabled = want;
+      win.setIgnoreMouseEvents(!want);
+    }
+  }, 50);
+}
+
+// Linux has no installer wizard, so the first launch asks what the Windows installer asks.
+async function firstRunLinux() {
+  if (!isLinux || config.setupDone) return;
+  const missing = linux.missingTools();
+  const detail = [
+    'claudetop adds a few hooks to ~/.claude/settings.json so it can see what Claude Code is doing. ' +
+      'You can change this later from its right-click menu.',
+    missing.length
+      ? `\nSome features need tools that aren't installed. On Ubuntu or Debian:\nsudo apt install ${missing.join(' ')}`
+      : '',
+  ].join('');
+  const { response, checkboxChecked } = await dialog.showMessageBox({
+    type: 'question',
+    title: 'claudetop',
+    message: 'Connect claudetop to Claude Code?',
+    detail,
+    buttons: ['Connect', 'Not now'],
+    defaultId: 0,
+    cancelId: 1,
+    checkboxLabel: 'Turn Claude into Agent 47 (suit, red tie, barcode)',
+  });
+  if (response === 0) {
+    try { hooksSetup.installHooks(hookCommand()); } catch {}
+  }
+  if (checkboxChecked) config.hat = 'agent47';
+  config.setupDone = true;
+  saveConfig();
+  pushConfig();
+}
 
 ipcMain.on('lockin-close', closeLockedTab);
 ipcMain.on('lockin-done', finishLockIn);
@@ -565,6 +698,9 @@ if (!app.requestSingleInstanceLock()) {
 } else {
   app.whenReady().then(() => {
     loadConfig();
+    if (app.isPackaged) {
+      try { hooksSetup.refreshHooks(hookCommand()); } catch {}
+    }
     createWindow();
     watchSessions();
     watchFocus();
@@ -572,10 +708,14 @@ if (!app.requestSingleInstanceLock()) {
     tray.setToolTip('claudetop');
     tray.on('click', () => tray.popUpContextMenu());
     rebuildMenus();
+    if (isLinux) {
+      watchCursorLinux();
+      firstRunLinux();
+    }
   });
   app.on('window-all-closed', () => app.quit());
   app.on('before-quit', () => {
     app.isQuitting = true;
-    if (focusWatcher) focusWatcher.kill();
+    if (focusWatcher) (isLinux ? focusWatcher.stop() : focusWatcher.kill());
   });
 }
