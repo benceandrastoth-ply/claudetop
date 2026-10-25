@@ -46,6 +46,7 @@ function transcriptSaysNoCredit(transcriptPath) {
 // as "pid:name" strings. claudetop matches the foreground window against these to tell
 // whether you're looking at this session. Costs ~0.5s, so it runs once per session.
 function processChain() {
+  if (process.platform === 'linux') return linuxProcessChain();
   if (process.platform !== 'win32') return [];
   const script =
     '$m=@{}; Get-CimInstance Win32_Process | ForEach-Object { $m[[int]$_.ProcessId]=$_ };' +
@@ -62,6 +63,25 @@ function processChain() {
   } catch {
     return [];
   }
+}
+
+// Linux: walk /proc/<pid>/stat up to init. Cheap enough to do directly.
+function linuxProcessChain() {
+  const chain = [];
+  let pid = process.pid;
+  for (let i = 0; i < 25 && pid > 1; i++) {
+    try {
+      const stat = fs.readFileSync(`/proc/${pid}/stat`, 'utf8');
+      // "pid (comm) state ppid ...": comm may contain spaces, so split after the last ")".
+      const name = stat.slice(stat.indexOf('(') + 1, stat.lastIndexOf(')'));
+      const ppid = Number(stat.slice(stat.lastIndexOf(')') + 2).split(' ')[1]);
+      chain.push(`${pid}:${name}`);
+      pid = ppid;
+    } catch {
+      break;
+    }
+  }
+  return chain;
 }
 
 function stateFor(input) {

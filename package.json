@@ -11,6 +11,7 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win nsis",
+    "dist:linux": "electron-builder --linux AppImage deb",
     "release": "node scripts/publish-release.js",
     "install-hooks": "node scripts/install-hooks.js",
     "uninstall-hooks": "node scripts/install-hooks.js --uninstall"
@@ -50,6 +51,21 @@
       "uninstallDisplayName": "claudetop",
       "runAfterFinish": true,
       "include": "build/installer.nsh"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "assets/icon.png",
+      "category": "Utility",
+      "synopsis": "A tiny Claude for your taskbar",
+      "maintainer": "potata <benceandrastoth-ply@users.noreply.github.com>",
+      "executableArgs": ["--no-sandbox"],
+      "artifactName": "claudetop-${version}-${arch}.${ext}"
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0", "libnotify4", "libnss3", "libxss1", "libxtst6", "xdg-utils", "libatspi2.0-0",
+        "libuuid1", "libsecret-1-0", "x11-utils", "xdotool", "playerctl"
+      ]
     }
   }
 }

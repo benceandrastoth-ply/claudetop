@@ -65,3 +65,48 @@ const out = path.resolve(__dirname, '..', 'assets', 'claude.ico');
 fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.writeFileSync(out, Buffer.concat([dir, ...images]));
 console.log(out);
+
+// Linux wants a PNG: 512x512 RGBA.
+function png(size) {
+  const zlib = require('zlib');
+  const scale = size / 16;
+  const raw = Buffer.alloc((size * 4 + 1) * size); // each row starts with filter byte 0
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const c = COLORS[ART[Math.floor(y / scale)][Math.floor(x / scale)]];
+      if (c) raw.set([c[2], c[1], c[0], c[3]], y * (size * 4 + 1) + 1 + x * 4); // BGRA -> RGBA
+    }
+  }
+  const crcTable = Array.from({ length: 256 }, (_, n) => {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    return c >>> 0;
+  });
+  const crc = (buf) => {
+    let c = 0xffffffff;
+    for (const b of buf) c = crcTable[(c ^ b) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  };
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4);
+    len.writeUInt32BE(data.length);
+    const body = Buffer.concat([Buffer.from(type), data]);
+    const sum = Buffer.alloc(4);
+    sum.writeUInt32BE(crc(body));
+    return Buffer.concat([len, body, sum]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(size, 0);
+  ihdr.writeUInt32BE(size, 4);
+  ihdr.set([8, 6, 0, 0, 0], 8); // 8-bit RGBA
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', zlib.deflateSync(raw)),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+const pngOut = path.resolve(__dirname, '..', 'assets', 'icon.png');
+fs.writeFileSync(pngOut, png(512));
+console.log(pngOut);
