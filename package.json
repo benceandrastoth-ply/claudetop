@@ -1,0 +1,53 @@
+{
+  "name": "claudetop",
+  "productName": "claudetop",
+  "version": "0.2.1",
+  "description": "A little Claude that lives at the bottom of your screen and shows what Claude Code is up to",
+  "author": "claudetop",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis",
+    "release": "node scripts/publish-release.js",
+    "install-hooks": "node scripts/install-hooks.js",
+    "uninstall-hooks": "node scripts/install-hooks.js --uninstall"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  },
+  "build": {
+    "appId": "app.claudetop",
+    "productName": "claudetop",
+    "files": [
+      "src/**",
+      "hooks/**",
+      "assets/**",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/claude.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": true,
+      "shortcutName": "claudetop",
+      "installerIcon": "assets/claude.ico",
+      "uninstallerIcon": "assets/claude.ico",
+      "uninstallDisplayName": "claudetop",
+      "runAfterFinish": true,
+      "include": "build/installer.nsh"
+    }
+  }
+}

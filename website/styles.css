@@ -1,0 +1,297 @@
+/* Colours come from brand.js (site.js copies them here); these are the fallbacks. */
+:root {
+  --desk: #262c66;
+  --desk-deep: #1d2252;
+  --taskbar: #12152f;
+  --paper: #f2f0ff;
+  --muted: #a9acd6;
+  --accent: #f5c518;
+  --accent-shade: #b88f00;
+  --line: rgba(242, 240, 255, 0.14);
+
+  --pixel: "Pixelify Sans", "Segoe UI", system-ui, sans-serif;
+  --text: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+
+  /* Headings: Pixelify Sans, 64px at the top, -0.02em. Body: Atkinson Hyperlegible, 16px / 1.6. */
+  --step-0: 1rem;
+  --step-1: 1.25rem;
+  --step-2: clamp(1.75rem, 1.3rem + 1.6vw, 2.5rem);
+  --step-3: clamp(2.6rem, 1.6rem + 4.2vw, 4rem);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+body {
+  margin: 0;
+  background: var(--desk);
+  color: var(--paper);
+  font: 400 var(--step-0) / 1.6 var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+code { font-size: 0.92em; background: rgba(242, 240, 255, 0.1); padding: 0.1em 0.35em; border-radius: 3px; }
+
+.skip {
+  position: absolute;
+  left: 16px;
+  top: -60px;
+  z-index: 10;
+  padding: 8px 14px;
+  background: var(--accent);
+  color: var(--taskbar);
+  text-decoration: none;
+}
+.skip:focus { top: 12px; }
+
+h1, h2, h3 { font-family: var(--pixel); font-weight: 700; line-height: 1.1; margin: 0; letter-spacing: -0.02em; }
+h2 { font-size: var(--step-2); margin-bottom: 0.6em; }
+h3 { font-size: var(--step-1); font-weight: 500; margin-bottom: 0.35em; }
+p { margin: 0 0 1em; }
+
+.wrap { width: min(1080px, 100% - 32px); margin-inline: auto; }
+.wrap.narrow { width: min(760px, 100% - 32px); }
+
+/* ---------- the desktop (hero) ---------- */
+.desk {
+  position: relative;
+  min-height: min(100vh, 900px);
+  display: flex;
+  flex-direction: column;
+  background: var(--desk);
+}
+
+.topnav {
+  width: min(1080px, 100% - 32px);
+  margin: 0 auto;
+  padding: 22px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.wordmark { font: 700 1.5rem var(--pixel); text-decoration: none; }
+.topnav ul { display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; }
+.topnav ul a { color: var(--muted); text-decoration: none; font-size: 0.98rem; }
+.topnav ul a:hover { color: var(--paper); }
+@media (max-width: 760px) {
+  .topnav ul { display: none; }
+}
+
+.hero {
+  width: min(1080px, 100% - 32px);
+  margin: auto;
+  padding: 48px 0 150px; /* room for Claude and its bubble above the taskbar */
+}
+.hero h1 {
+  font-size: var(--step-3);
+  max-width: 13ch;
+  margin-bottom: 0.35em;
+  text-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
+}
+.lede { font-size: var(--step-1); max-width: 34em; color: var(--paper); opacity: 0.9; }
+
+.get { margin-top: 32px; }
+.download {
+  display: inline-block;
+  padding: 16px 28px 14px;
+  background: var(--accent);
+  color: var(--taskbar);
+  font: 700 1.3rem var(--pixel);
+  text-decoration: none;
+  box-shadow: 0 6px 0 var(--accent-shade), 0 10px 24px rgba(0, 0, 0, 0.35);
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+.download:hover { transform: translateY(-2px); box-shadow: 0 8px 0 var(--accent-shade), 0 14px 28px rgba(0, 0, 0, 0.35); }
+.download:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--accent-shade); }
+.download-meta { margin-top: 18px; color: var(--muted); font-size: 0.95rem; }
+.download-small { font-size: 1.1rem; padding: 12px 22px 10px; margin-top: 8px; }
+
+.try {
+  position: absolute;
+  right: max(16px, (100% - 1080px) / 2);
+  bottom: 72px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+@media (max-width: 900px) {
+  /* below the taskbar on small screens, where Claude would walk over it */
+  .try { position: static; order: 3; width: min(1080px, 100% - 32px); margin: 14px auto 18px; }
+}
+
+/* the taskbar the demo Claude walks on */
+.taskbar {
+  position: relative;
+  background: var(--taskbar);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: stretch;
+}
+.stage { position: relative; flex: 1; min-width: 0; height: 0; } /* Claude stands on the taskbar's top edge */
+.tray {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px 18px;
+  padding: 10px 16px;
+}
+/* min-width: fieldsets refuse to shrink below their content by default */
+.picker { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.picker legend {
+  float: left;
+  margin-right: 6px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.picker label { position: relative; cursor: pointer; }
+.picker input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.picker span {
+  display: block;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: var(--paper);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid transparent;
+}
+.picker label:hover span { background: rgba(255, 255, 255, 0.12); }
+.picker input:checked + span { background: rgba(245, 197, 24, 0.16); border-color: var(--accent); color: var(--accent); }
+.picker input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 900px) {
+  .taskbar { flex-direction: column; }
+  .stage { height: 0; }
+  .tray { justify-content: flex-start; }
+}
+
+/* ---------- sections ---------- */
+.block { padding: 96px 0; }
+.block.alt { background: var(--desk-deep); }
+.intro { color: var(--muted); max-width: 40em; margin-bottom: 40px; }
+
+.split { display: grid; grid-template-columns: 1fr 1.1fr; gap: 56px; align-items: start; }
+.split > div > p { max-width: 32em; color: var(--paper); opacity: 0.9; }
+@media (max-width: 860px) {
+  .split { grid-template-columns: 1fr; gap: 32px; }
+}
+
+.states { list-style: none; margin: 0; padding: 0; }
+.states li {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 20px;
+  align-items: end;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+.states li:first-child { border-top: 1px solid var(--line); }
+.states .mini { position: relative; height: 72px; }
+.states h3 { font-size: 1.15rem; }
+.states p { margin: 0; color: var(--muted); font-size: 0.98rem; }
+
+.extras { display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px 56px; margin: 0; }
+.extras dt { font: 500 var(--step-1) var(--pixel); margin-bottom: 6px; }
+.extras dd { margin: 0; color: var(--muted); max-width: 30em; }
+@media (max-width: 760px) {
+  .extras { grid-template-columns: 1fr; gap: 28px; }
+}
+
+.steps { list-style: none; counter-reset: step; margin: 0 0 32px; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+.steps li { counter-increment: step; }
+.steps li::before {
+  content: counter(step);
+  display: block;
+  font: 700 3rem/1 var(--text);
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.steps p { color: var(--muted); margin: 0; }
+@media (max-width: 860px) {
+  .steps { grid-template-columns: 1fr; gap: 28px; }
+}
+
+details { border-bottom: 1px solid var(--line); }
+details:first-of-type { border-top: 1px solid var(--line); }
+summary { cursor: pointer; padding: 18px 0; font-size: var(--step-1); list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; font-family: var(--pixel); color: var(--accent); }
+details[open] summary::after { content: "−"; }
+details p { color: var(--muted); padding-bottom: 8px; }
+
+/* ---------- Agent 47: the page turns red while you're here ---------- */
+body, .desk, .block, .taskbar, .foot { transition: background-color 0.9s ease, color 0.9s ease; }
+body.agent-mode {
+  --desk: #3a0910;
+  --desk-deep: #24050a;
+  --taskbar: #120306;
+  --muted: #d9a3a9;
+  --line: rgba(255, 220, 224, 0.16);
+}
+.agent { background: var(--desk-deep); }
+/* (not ".barcode": that's the class of the barcode pixels on 47's head) */
+.barcode-strip {
+  height: 28px;
+  width: 132px;
+  margin: 0 0 24px;
+  background: repeating-linear-gradient(90deg,
+    var(--paper) 0 2px, transparent 2px 5px, var(--paper) 5px 6px, transparent 6px 8px,
+    var(--paper) 8px 11px, transparent 11px 13px, var(--paper) 13px 14px, transparent 14px 17px);
+  opacity: 0.85;
+}
+.agent h2 { font-size: var(--step-3); margin-bottom: 0.3em; }
+.agent .intro { color: var(--paper); opacity: 0.85; }
+.dossier {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+  margin: 56px 0 0;
+}
+.dossier figure { margin: 0; border-top: 3px solid #c8102e; padding-top: 16px; }
+.dossier figcaption { color: var(--muted); font-size: 0.95rem; max-width: 22em; }
+.dossier figcaption b { display: block; color: var(--paper); font: 500 var(--step-1) var(--pixel); margin-bottom: 4px; }
+.portrait { position: relative; height: 210px; margin-bottom: 18px; }
+.portrait .claude { left: 50%; bottom: 14px; transform: translateX(-50%) scale(2.3); transform-origin: 50% 100%; }
+.portrait .claude .bubble { display: none; }
+.portrait .duck { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%) scale(3); transform-origin: 50% 100%; }
+@media (max-width: 960px) {
+  .dossier { grid-template-columns: repeat(2, 1fr); gap: 40px 24px; }
+}
+@media (max-width: 520px) {
+  .dossier { grid-template-columns: 1fr; }
+}
+
+/* ---------- releases (deliberately last) ---------- */
+.releases { background: var(--taskbar); }
+.release-list { list-style: none; margin: 0; padding: 0; }
+.release {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr auto;
+  gap: 8px 24px;
+  align-items: baseline;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+.release:first-child { border-top: 1px solid var(--line); }
+.release .ver { font: 700 1.25rem var(--text); } /* the pixel face's 2 reads as an 8 */
+.release time { display: block; color: var(--muted); font-size: 0.88rem; }
+.release ul { margin: 0; padding-left: 1.1em; color: var(--muted); font-size: 0.98rem; }
+.release .get-old { white-space: nowrap; font-size: 0.95rem; }
+.release .get-old a { color: var(--accent); }
+.release .gone { color: var(--muted); font-size: 0.88rem; }
+.release .latest { color: var(--accent); font-size: 0.85rem; display: block; }
+.release .hash { grid-column: 2 / -1; color: var(--muted); font-size: 0.78rem; word-break: break-all; opacity: 0.75; }
+@media (max-width: 640px) {
+  .release { grid-template-columns: 1fr; }
+  .release .hash { grid-column: 1; }
+}
+
+.foot { padding: 40px 0 56px; background: var(--taskbar); border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
+.foot p { margin: 0 0 6px; }
+.foot .links a { margin-right: 16px; }

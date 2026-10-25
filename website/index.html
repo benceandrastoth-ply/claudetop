@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>claudetop: a tiny Claude for your taskbar</title>
+  <meta name="description" content="A tiny pixel Claude that lives on your Windows taskbar and shows what Claude Code is doing.">
+  <meta property="og:title" content="claudetop">
+  <meta property="og:description" content="A tiny pixel Claude that lives on your Windows taskbar and shows what Claude Code is doing.">
+  <link rel="icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="sprite.css">
+  <script src="brand.js"></script>
+  <script src="releases.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="desk">
+    <nav class="topnav" aria-label="Main">
+      <a class="wordmark" href="#top" data-brand-name>claudetop</a>
+      <ul>
+        <li><a href="#states">What it shows</a></li>
+        <li><a href="#extras">Extras</a></li>
+        <li><a href="#agent">Agent 47</a></li>
+        <li><a href="#setup">Setup</a></li>
+        <li><a href="#faq">Questions</a></li>
+        <li><a href="#releases">Releases</a></li>
+      </ul>
+    </nav>
+
+    <div class="hero" id="top">
+      <h1 data-brand-tagline>A tiny Claude for your taskbar.</h1>
+      <p class="lede" data-brand-description>
+        claudetop sits on your taskbar and acts out what Claude Code is doing. It works while Claude works,
+        waves when Claude needs you, and celebrates when the job is done.
+      </p>
+      <div class="get">
+        <a class="download" id="download-main" href="#releases">Download for Windows</a>
+        <p class="download-meta" id="download-meta">Free, for Windows 10 and 11</p>
+      </div>
+    </div>
+
+    <p class="try">This one's live. Try the buttons on the taskbar.</p>
+
+    <div class="taskbar" role="group" aria-label="Live demo: try claudetop here">
+      <div class="stage" id="stage"></div>
+      <div class="tray">
+        <fieldset class="picker" id="state-picker">
+          <legend>Claude Code is</legend>
+          <label><input type="radio" name="state" value="working" checked><span>Working</span></label>
+          <label><input type="radio" name="state" value="waiting"><span>Waiting for you</span></label>
+          <label><input type="radio" name="state" value="done"><span>Done</span></label>
+          <label><input type="radio" name="state" value="nocredit"><span>Out of credits</span></label>
+          <label><input type="radio" name="state" value="resting"><span>Idle</span></label>
+        </fieldset>
+        <fieldset class="picker" id="hat-picker">
+          <legend>Hat</legend>
+          <label><input type="radio" name="hat" value="none" checked><span>None</span></label>
+          <label><input type="radio" name="hat" value="hard"><span>Hard hat</span></label>
+          <label><input type="radio" name="hat" value="propeller"><span>Propeller</span></label>
+          <label><input type="radio" name="hat" value="miner"><span>Miner</span></label>
+          <label><input type="radio" name="hat" value="agent47"><span>Agent 47</span></label>
+        </fieldset>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="block" id="states">
+      <div class="wrap split">
+        <div>
+          <h2>It always knows what Claude Code is doing</h2>
+          <p>
+            claudetop connects to Claude Code when you install it. Every session reports in, so the little
+            Claude on your taskbar changes the moment Claude Code does. Hover over it to see each session.
+          </p>
+        </div>
+        <ul class="states" id="state-list"></ul>
+      </div>
+    </section>
+
+    <section class="block alt" id="extras">
+      <div class="wrap">
+        <h2>And a few things nobody asked for</h2>
+        <p class="intro">They're all in the right-click menu. We'll let Claude show you the rest.</p>
+        <dl class="extras">
+          <div>
+            <dt>Panic when done</dt>
+            <dd>Walk away while Claude Code is finishing something. It will make sure you notice.</dd>
+          </div>
+          <div>
+            <dt>Hats</dt>
+            <dd>A few to choose from. Each one changes how Claude gets around, and not every one of them walks.</dd>
+          </div>
+          <div>
+            <dt>Music and videos</dt>
+            <dd>Put something on. Claude has opinions about what you listen to, and about being interrupted mid-episode.</dd>
+          </div>
+          <div>
+            <dt>Lock-in mode</dt>
+            <dd>For when you should be working. Open the wrong tab and find out.</dd>
+          </div>
+          <div>
+            <dt>All your monitors</dt>
+            <dd>Give it one screen or let it have all of them.</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="block agent" id="agent" aria-labelledby="agent-title">
+      <div class="wrap">
+        <div class="barcode-strip" aria-hidden="true"></div>
+        <h2 id="agent-title">Agent 47</h2>
+        <p class="intro">
+          Tick one box in the installer and Claude shows up in a suit. Quiet, punctual, never in a hurry.
+          He handles problems his own way.
+        </p>
+        <div class="dossier">
+          <figure>
+            <div class="portrait" data-pose="working"></div>
+            <figcaption><b>On a contract</b>Works quietly while Claude Code does.</figcaption>
+          </figure>
+          <figure>
+            <div class="portrait" data-pose="sneak"></div>
+            <figcaption><b>47 px per second</b>Not one more, not one less.</figcaption>
+          </figure>
+          <figure>
+            <div class="portrait" data-pose="resting"></div>
+            <figcaption><b>Off the clock</b>Never panics. Not even when he should.</figcaption>
+          </figure>
+          <figure>
+            <div class="portrait" data-pose="duck"></div>
+            <figcaption><b>Do not ask about the duck</b>He won't tell you either.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="setup">
+      <div class="wrap">
+        <h2>Set up in a minute</h2>
+        <ol class="steps">
+          <li>
+            <h3>Download the installer</h3>
+            <p>One file. You need Windows 10 or 11 and Claude Code.</p>
+          </li>
+          <li>
+            <h3>Run it and keep "Connect to Claude Code" ticked</h3>
+            <p>Choose where to install it, a desktop shortcut, and whether it starts with Windows. You can also turn Claude into Agent 47 here.</p>
+          </li>
+          <li>
+            <h3>Start Claude Code</h3>
+            <p>Give it a task and watch the taskbar. Right-click the little Claude for every option.</p>
+          </li>
+        </ol>
+        <a class="download download-small" id="download-setup" href="#releases">Download for Windows</a>
+      </div>
+    </section>
+
+    <section class="block alt" id="faq">
+      <div class="wrap narrow">
+        <h2>Questions</h2>
+        <details>
+          <summary>Windows says "Windows protected your PC"</summary>
+          <p>The installer isn't code-signed yet, so SmartScreen doesn't recognise it. Click <b>More info</b>, then <b>Run anyway</b>.</p>
+        </details>
+        <details>
+          <summary>What does it read on my computer?</summary>
+          <p>Claude Code's status (through hooks in <code>~/.claude/settings.json</code>), the title of the window in front, and what your media player says is playing. Nothing leaves your computer.</p>
+        </details>
+        <details>
+          <summary>Does it work with the Claude app or claude.ai?</summary>
+          <p>It works with Claude Code, including Claude Code inside the desktop app. Regular chat doesn't report when it's working, so there's nothing to show.</p>
+        </details>
+        <details>
+          <summary>How do I remove it?</summary>
+          <p>Uninstall claudetop from Windows Settings. That also removes its hooks from Claude Code.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="block releases" id="releases">
+      <div class="wrap narrow">
+        <h2>All releases</h2>
+        <p class="intro">The newest version is the one at the top of this page. Older versions are here in case you need one.</p>
+        <ol class="release-list" id="release-list"></ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      <p class="made" id="made"></p>
+      <p class="links" id="links"></p>
+      <p class="legal">
+        An unofficial fan project, not affiliated with or endorsed by Anthropic.
+        Claude and Claude Code are trademarks of Anthropic.
+      </p>
+    </div>
+  </footer>
+
+  <script src="site.js"></script>
+</body>
+</html>

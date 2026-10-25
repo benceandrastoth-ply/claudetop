@@ -1,0 +1,137 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>claudetop</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="fx"></div>
+  <div id="claude" class="resting">
+    <div class="info" id="info"></div>
+    <div class="bubble" id="bubble"></div>
+    <div class="zzz"><span>z</span><span>z</span><span>Z</span></div>
+    <div class="notes"><span>♪</span><span>♫</span><span>♬</span><span>♪</span><span>♩</span><span>♫</span></div>
+    <div class="sprite" id="sprite">
+      <div class="bob">
+        <svg viewBox="0 0 16 10" width="96" height="60" shape-rendering="crispEdges">
+          <g class="legs-a">
+            <rect x="3" y="7" width="1" height="3" />
+            <rect x="10" y="7" width="1" height="3" />
+          </g>
+          <g class="legs-b">
+            <rect x="5" y="7" width="1" height="3" />
+            <rect x="12" y="7" width="1" height="3" />
+          </g>
+          <rect class="body" x="2" y="0" width="12" height="7.01" />
+          <g class="suit">
+            <rect class="jacket" x="2" y="4.4" width="12" height="2.61" />
+            <rect class="shirt" x="6.8" y="4.4" width="2.4" height="1.4" />
+            <rect class="tie" x="7.6" y="4.4" width="0.8" height="2.4" />
+            <rect class="tie" x="7.4" y="4.4" width="1.2" height="0.6" />
+            <rect class="barcode" x="2.4" y="0.6" width="0.2" height="1.3" />
+            <rect class="barcode" x="2.8" y="0.6" width="0.35" height="1.3" />
+            <rect class="barcode" x="3.3" y="0.6" width="0.15" height="1.3" />
+            <rect class="barcode" x="3.6" y="0.6" width="0.3" height="1.3" />
+            <rect class="barcode" x="4.05" y="0.6" width="0.15" height="1.3" />
+            <rect class="brow47" x="4.4" y="1.4" width="2.2" height="0.5" />
+            <rect class="brow47" x="9.4" y="1.4" width="2.2" height="0.5" />
+          </g>
+          <rect class="arm arm-l" x="0" y="3" width="2" height="2" />
+          <rect class="arm arm-r" x="14" y="3" width="2" height="2" />
+          <g class="eyes-open">
+            <rect x="5" y="2" width="1" height="2" />
+            <rect x="10" y="2" width="1" height="2" />
+          </g>
+          <g class="eyes-closed">
+            <rect x="4.5" y="3" width="2" height="0.6" />
+            <rect x="9.5" y="3" width="2" height="0.6" />
+          </g>
+          <g class="eyes-panic">
+            <rect x="4.5" y="1.5" width="2" height="2.5" />
+            <rect x="9.5" y="1.5" width="2" height="2.5" />
+            <rect class="shine" x="5.5" y="1.8" width="0.7" height="0.7" />
+            <rect class="shine" x="10.5" y="1.8" width="0.7" height="0.7" />
+          </g>
+          <g class="blush">
+            <rect x="3.3" y="4.3" width="1.6" height="0.7" />
+            <rect x="11.1" y="4.3" width="1.6" height="0.7" />
+          </g>
+          <g class="brows">
+            <rect x="4" y="1" width="2.4" height="0.6" transform="rotate(25 5.2 1.3)" />
+            <rect x="9.6" y="1" width="2.4" height="0.6" transform="rotate(-25 10.8 1.3)" />
+          </g>
+          <g class="eyes-happy">
+            <rect x="4.4" y="3" width="0.75" height="0.75" />
+            <rect x="5.1" y="2.3" width="0.75" height="0.75" />
+            <rect x="5.8" y="3" width="0.75" height="0.75" />
+            <rect x="9.4" y="3" width="0.75" height="0.75" />
+            <rect x="10.1" y="2.3" width="0.75" height="0.75" />
+            <rect x="10.8" y="3" width="0.75" height="0.75" />
+          </g>
+          <g class="hat hard">
+            <rect class="hat-shell" x="4" y="-4" width="8" height="1" />
+            <rect class="hat-shell" x="3" y="-3" width="10" height="2" />
+            <rect class="hat-ridge" x="7.5" y="-4" width="1" height="3" />
+            <rect class="hat-shine" x="4" y="-3" width="1" height="1" />
+            <rect class="hat-brim" x="1" y="-1" width="14" height="1" />
+          </g>
+          <g class="hat miner">
+            <polygon class="beam" points="13.4,-2.6 23,-5.5 23,1.2 13.4,-1.6" />
+            <rect class="hat-shell" x="4" y="-4" width="8" height="1" />
+            <rect class="hat-shell" x="3" y="-3" width="10" height="2" />
+            <rect class="hat-ridge" x="7.5" y="-4" width="1" height="3" />
+            <rect class="hat-brim" x="1" y="-1" width="14" height="1" />
+            <rect class="lamp-base" x="11.2" y="-2.9" width="1.8" height="1.6" />
+            <rect class="lamp" x="12.6" y="-2.7" width="0.9" height="1.2" />
+          </g>
+          <g class="shovel">
+            <rect class="sh-grip" x="14.5" y="-3.6" width="1.6" height="0.6" />
+            <rect class="sh-handle" x="15" y="-3" width="0.6" height="12" />
+            <rect class="sh-blade" x="14.2" y="9" width="2.2" height="2.4" />
+            <rect class="sh-blade" x="14.6" y="11.4" width="1.4" height="0.6" />
+          </g>
+          <g class="hat propeller">
+            <rect class="pc-red" x="5" y="-2.6" width="1" height="0.6" />
+            <rect class="pc-yellow" x="6" y="-2.6" width="2" height="0.6" />
+            <rect class="pc-blue" x="8" y="-2.6" width="2" height="0.6" />
+            <rect class="pc-green" x="10" y="-2.6" width="1" height="0.6" />
+            <rect class="pc-red" x="4" y="-2" width="2" height="2" />
+            <rect class="pc-yellow" x="6" y="-2" width="2" height="2" />
+            <rect class="pc-blue" x="8" y="-2" width="2" height="2" />
+            <rect class="pc-green" x="10" y="-2" width="2" height="2" />
+            <rect class="pc-visor" x="11" y="-0.6" width="3.5" height="0.6" />
+            <rect class="pc-stem" x="7.75" y="-3.6" width="0.5" height="1" />
+            <g class="prop">
+              <rect class="pc-red" x="4.5" y="-4.1" width="3.5" height="0.6" />
+              <rect class="pc-blue" x="8" y="-4.1" width="3.5" height="0.6" />
+              <rect class="pc-hub" x="7.55" y="-4.25" width="0.9" height="0.9" />
+            </g>
+          </g>
+          <g class="phones">
+            <g class="band-low">
+              <rect x="2.2" y="-1.2" width="11.6" height="0.7" />
+              <rect x="2.2" y="-1.2" width="0.7" height="2.4" />
+              <rect x="13.1" y="-1.2" width="0.7" height="2.4" />
+            </g>
+            <g class="band-high">
+              <rect x="1.6" y="-5" width="12.8" height="0.7" />
+              <rect x="1.6" y="-5" width="0.7" height="6.2" />
+              <rect x="13.7" y="-5" width="0.7" height="6.2" />
+            </g>
+            <rect class="cup" x="1" y="0.8" width="1.9" height="2.6" />
+            <rect class="cup" x="13.1" y="0.8" width="1.9" height="2.6" />
+          </g>
+        </svg>
+        <div class="sweat"><i></i><i></i></div>
+        <div class="puff"></div>
+        <div class="tear"></div>
+        <div class="steam"><i></i><i></i></div>
+      </div>
+    </div>
+    <div class="shadow"></div>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>

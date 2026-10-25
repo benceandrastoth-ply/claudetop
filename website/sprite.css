@@ -1,0 +1,172 @@
+/* The pixel Claude, ported from the app (src/style.css), scoped to .claude. */
+.claude { position: absolute; bottom: 0; width: 96px; --clay: #d97757; --ink: #1a1a1a; }
+.claude .sprite { position: relative; transition: filter 0.6s; }
+.claude .sprite.flip { transform: scaleX(-1); }
+.claude .bob { transform-origin: 50% 100%; }
+.claude svg { display: block; overflow: visible; }
+.claude svg rect { fill: var(--clay); }
+.claude .eyes-open rect, .claude .eyes-closed rect, .claude .eyes-happy rect { fill: var(--ink); }
+.claude .eyes-closed, .claude .eyes-happy, .claude .hat, .claude .suit { display: none; }
+.claude .shadow {
+  position: absolute; left: 14px; right: 14px; bottom: -3px; height: 6px;
+  border-radius: 50%; background: rgba(0, 0, 0, 0.3); filter: blur(1.5px);
+}
+
+/* speech bubble */
+.claude .bubble {
+  position: absolute; bottom: 74px; left: 50%; transform: translateX(-50%);
+  white-space: nowrap; padding: 4px 10px; border-radius: 10px;
+  font: 600 12px "Segoe UI", system-ui, sans-serif; color: var(--ink);
+  background: #faf9f5; border: 2px solid var(--ink); box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+  opacity: 0; transition: opacity 0.25s; pointer-events: none;
+}
+.claude .bubble::after {
+  content: ""; position: absolute; left: 50%; bottom: -7px; width: 8px; height: 8px;
+  background: inherit; border-right: 2px solid; border-bottom: 2px solid; border-color: inherit;
+  transform: translateX(-50%) rotate(45deg);
+}
+.claude .bubble.show { opacity: 1; }
+.claude.hat-on .bubble { bottom: 96px; }
+.claude.waiting .bubble { background: #fff4d6; border-color: #d99a1e; color: #6b4a00; }
+.claude.done .bubble { background: #e6f4e8; border-color: #4f9a5c; color: #1f5b2a; }
+.claude.nocredit .bubble { background: #fbe6e3; border-color: #c4483e; color: #7a1f17; bottom: 64px; }
+.claude.hat-on.nocredit .bubble { bottom: 84px; }
+.claude .dots span { animation: dot 1.2s infinite; opacity: 0.2; }
+.claude .dots span:nth-child(2) { animation-delay: 0.2s; }
+.claude .dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dot { 30% { opacity: 1; } 60% { opacity: 0.2; } }
+
+/* walking */
+.claude.walking .legs-a { animation: step 0.32s steps(1) infinite; }
+.claude.walking .legs-b { animation: step 0.32s steps(1) infinite 0.16s; }
+.claude.walking .bob { animation: walkbob 0.32s steps(2) infinite; }
+@keyframes step { 0% { transform: translateY(-1px); } 50% { transform: translateY(0); } }
+@keyframes walkbob { 0% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+.claude.walking .eyes-open, .claude.working .eyes-open { transform: translateX(1px); }
+
+/* working in place: typing */
+.claude.working:not(.walking) .arm-l { animation: tap 0.22s steps(1) infinite; }
+.claude.working:not(.walking) .arm-r { animation: tap 0.22s steps(1) infinite 0.11s; }
+@keyframes tap { 0% { transform: translateY(-1px); } 50% { transform: translateY(0.5px); } }
+
+/* done: hop */
+.claude.celebrate .bob { animation: hop 0.5s ease-out 3; }
+@keyframes hop {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  15% { transform: translateY(0) scaleY(0.85); }
+  45% { transform: translateY(-18px) scaleY(1.05); }
+}
+
+/* waiting: wave and bounce */
+.claude.waiting .arm { animation: wave 0.5s ease-in-out infinite alternate; }
+@keyframes wave { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+.claude.waiting .bob { animation: bounce 0.9s ease-in-out infinite; }
+@keyframes bounce { 50% { transform: translateY(-4px); } }
+
+/* out of credits */
+.claude.nocredit .sprite { filter: grayscale(0.85) brightness(0.85); }
+.claude.nocredit .bob { transform: scaleY(0.82); }
+.claude.nocredit .eyes-open { display: none; }
+.claude.nocredit .eyes-closed { display: inline; }
+.claude.nocredit .arm { transform: translateY(2px); }
+
+/* resting */
+.claude.resting .legs-a, .claude.resting .legs-b { transform: translateY(-1.5px); }
+.claude.resting .bob { animation: breathe 3.2s ease-in-out infinite; }
+.claude.resting .eyes-open { display: none; }
+.claude.resting .eyes-closed { display: inline; }
+@keyframes breathe {
+  0%, 100% { transform: translateY(9px) scaleY(1); }
+  50% { transform: translateY(9px) scaleY(0.95); }
+}
+.claude .zzz { position: absolute; left: 66px; bottom: 44px; display: none; pointer-events: none; }
+.claude.resting .zzz { display: block; }
+.claude .zzz span {
+  position: absolute; font: 700 13px "Segoe UI", sans-serif; color: #faf9f5;
+  -webkit-text-stroke: 1px var(--ink); opacity: 0; animation: float 3.6s linear infinite;
+}
+.claude .zzz span:nth-child(2) { animation-delay: 1.2s; font-size: 15px; }
+.claude .zzz span:nth-child(3) { animation-delay: 2.4s; font-size: 18px; }
+@keyframes float {
+  0% { transform: translate(0, 0); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate(18px, -50px); opacity: 0; }
+}
+
+/* hats */
+.claude .hat { transform-box: fill-box; transform-origin: 50% 100%; }
+.claude.hat-hard .hat.hard, .claude.hat-propeller .hat.propeller, .claude.hat-miner .hat.miner { display: inline; }
+.claude svg .hat-shell { fill: #f5c518; }
+.claude svg .hat-ridge { fill: #d99a00; }
+.claude svg .hat-shine { fill: #fff3b0; }
+.claude svg .hat-brim { fill: #e0a400; }
+.claude svg .pc-red { fill: #e8484a; }
+.claude svg .pc-yellow { fill: #f5c518; }
+.claude svg .pc-blue { fill: #3d8bfd; }
+.claude svg .pc-green { fill: #3cb371; }
+.claude svg .pc-visor { fill: #b8383a; }
+.claude svg .pc-stem { fill: #8a8a8a; }
+.claude svg .pc-hub { fill: #555; }
+.claude svg .lamp-base { fill: #444; }
+.claude svg .lamp { fill: #fff6a8; }
+.claude .beam { fill: rgba(255, 240, 150, 0.32); }
+.claude.resting .beam { display: none; }
+.claude .prop { transform-box: fill-box; transform-origin: 50% 50%; }
+.claude.walking .prop { animation: spin 0.22s linear infinite; }
+@keyframes spin {
+  0% { transform: scaleX(1); } 25% { transform: scaleX(0.12); }
+  50% { transform: scaleX(-1); } 75% { transform: scaleX(-0.12); } 100% { transform: scaleX(1); }
+}
+.claude.walking .hat { animation: hatstep 0.32s steps(2) infinite 0.08s; }
+@keyframes hatstep { 0% { transform: translateY(0); } 50% { transform: translateY(-0.5px); } }
+.claude.waiting .hat { animation: hattip 0.5s ease-in-out infinite alternate; }
+@keyframes hattip { from { transform: rotate(0); } to { transform: translateY(-0.6px) rotate(-12deg); } }
+.claude.celebrate .hat { animation: hathop 0.5s ease-out 3; }
+@keyframes hathop {
+  0%, 30%, 100% { transform: translateY(0); }
+  55% { transform: translateY(-1.6px) rotate(6deg); }
+  75% { transform: translateY(-0.4px); }
+}
+.claude.resting .hat { transform: translateY(1.6px) rotate(-6deg); }
+.claude.nocredit .hat { transform: translate(1px, 0.6px) rotate(16deg); }
+/* a new hat drops on */
+.claude.hat-arrive .hat { animation: hatarrive 0.75s 0.1s ease-out both; }
+@keyframes hatarrive {
+  0% { transform: translateY(-14px) rotate(-12deg); opacity: 0; }
+  20% { opacity: 1; }
+  55% { transform: translateY(0.4px) rotate(0); }
+  72% { transform: translateY(-1.4px) rotate(3deg); }
+  100% { transform: none; }
+}
+
+/* Agent 47 */
+.claude.hat-agent47 .suit { display: inline; }
+.claude svg .suit .jacket { fill: #1b1b1f; }
+.claude svg .suit .shirt { fill: #f4f4f4; }
+.claude svg .suit .tie { fill: #c8102e; }
+.claude svg .suit .barcode, .claude svg .suit .brow47 { fill: var(--ink); }
+.claude.hat-agent47 svg .arm, .claude.hat-agent47 svg .legs-a rect, .claude.hat-agent47 svg .legs-b rect { fill: #1b1b1f; }
+.claude.hat-agent47 .eyes-open rect { y: 2.4px; height: 1.2px; }
+.claude.hat-agent47.walking .bob { animation: sneak 0.6s steps(2) infinite; }
+@keyframes sneak {
+  0% { transform: translateY(3px) scaleY(0.93); }
+  50% { transform: translateY(4px) scaleY(0.91) rotate(2deg); }
+}
+.claude.hat-agent47.walking .legs-a { animation: step 0.6s steps(1) infinite; }
+.claude.hat-agent47.walking .legs-b { animation: step 0.6s steps(1) infinite 0.3s; }
+
+/* the duck (Agent 47) */
+.duck svg { display: block; overflow: visible; }
+.duck .d-body { fill: #ffd23f; }
+.duck .d-beak { fill: #ff8a3d; }
+.duck .d-eye { fill: #1a1a1a; }
+.duck .d-led { fill: #c8102e; animation: led 0.6s steps(1) infinite; }
+@keyframes led { 50% { fill: #ff5b5b; } }
+
+/* small, still copies in the "what it shows" list */
+.mini .claude { left: 0; transform: scale(0.75); transform-origin: 0 100%; }
+.mini .claude .bubble, .mini .claude .shadow { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .claude *, .claude *::before, .claude *::after { animation: none !important; }
+}

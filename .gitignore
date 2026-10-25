@@ -1,0 +1,5 @@
+node_modules/
+dist/
+# Installers go to GitHub Releases, not the repository.
+website/downloads/
+*.log
