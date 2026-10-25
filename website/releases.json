@@ -1,5 +1,23 @@
 [
   {
+    "version": "0.8.2",
+    "date": "2026-10-25",
+    "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.2/claudetop-Setup-0.8.2.exe",
+    "linux": {
+      "appimage": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.2/claudetop-0.8.2-x86_64.AppImage",
+      "deb": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.2/claudetop-0.8.2-amd64.deb"
+    },
+    "size": 82004145,
+    "sha256": "54d44232fb35d5ead8e50116f289d95f1acd21db951ac03700b04e85d66650da",
+    "notes": [
+      "Double-click Claude to pet it (but don't click ten times in a row).",
+      "Scroll over Claude to change hats.",
+      "Snooze sounds for an hour from the menu, and see your record day under the daily recap.",
+      "While resting, Claude now reads the paper, juggles or snores now and then.",
+      "Claude starts where it last stood."
+    ]
+  },
+  {
     "version": "0.8.1",
     "date": "2026-10-25",
     "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.1/claudetop-Setup-0.8.1.exe",
