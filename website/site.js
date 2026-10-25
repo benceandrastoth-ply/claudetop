@@ -141,6 +141,67 @@ const SPRITE = `
         <rect class="lamp-base" x="11.2" y="-2.9" width="1.8" height="1.6" />
         <rect class="lamp" x="12.6" y="-2.7" width="0.9" height="1.2" />
       </g>
+      <g class="hat cowboy">
+        <rect class="cb" x="0" y="-1.6" width="1.2" height="1" />
+        <rect class="cb" x="14.8" y="-1.6" width="1.2" height="1" />
+        <rect class="cb" x="0.6" y="-0.9" width="14.8" height="0.9" />
+        <rect class="cb" x="4" y="-4" width="8" height="3.2" />
+        <rect class="cb-dent" x="7.4" y="-4" width="1.2" height="0.8" />
+        <rect class="cb-band" x="4" y="-1.8" width="8" height="0.8" />
+      </g>
+      <g class="hat wizard">
+        <rect class="wz" x="1.6" y="-0.8" width="12.8" height="0.8" />
+        <rect class="wz" x="4.4" y="-2.4" width="7.2" height="1.6" />
+        <rect class="wz" x="5.4" y="-4" width="5.2" height="1.6" />
+        <rect class="wz" x="6.6" y="-5.4" width="3.2" height="1.4" />
+        <rect class="wz" x="8.6" y="-6.4" width="2.4" height="1" />
+        <rect class="wz" x="10.6" y="-6" width="1" height="0.8" />
+        <rect class="wz-star" x="6" y="-2" width="0.8" height="0.8" />
+        <rect class="wz-star" x="8.6" y="-3.6" width="0.6" height="0.6" />
+        <rect class="wz-star" x="9.8" y="-1.8" width="0.5" height="0.5" />
+        <rect class="wz-band" x="4.4" y="-1.2" width="7.2" height="0.4" />
+      </g>
+      <g class="hat pirate">
+        <rect class="pr" x="2" y="-1.6" width="12" height="1.6" />
+        <rect class="pr" x="3.4" y="-3" width="9.2" height="1.6" />
+        <rect class="pr" x="1" y="-2.4" width="1.6" height="1.4" />
+        <rect class="pr" x="13.4" y="-2.4" width="1.6" height="1.4" />
+        <rect class="pr-trim" x="2" y="-0.4" width="12" height="0.4" />
+        <rect class="pr-skull" x="7.3" y="-2.6" width="1.4" height="1.2" />
+        <rect class="pr-eyes" x="7.5" y="-2.3" width="0.3" height="0.3" />
+        <rect class="pr-eyes" x="8.2" y="-2.3" width="0.3" height="0.3" />
+        <rect class="pr-strap" x="2" y="1.1" width="12" height="0.3" />
+        <rect class="pr-patch" x="9.4" y="1.6" width="2.2" height="2.6" />
+      </g>
+      <g class="hat astronaut">
+        <circle class="as-glass" cx="8" cy="3.2" r="6.9" />
+        <rect class="as-ring" x="1.5" y="8.6" width="13" height="1" />
+        <rect class="as-ant" x="11.6" y="-5.8" width="0.4" height="2.6" />
+        <rect class="as-light" x="11.4" y="-6.4" width="0.8" height="0.8" />
+        <rect class="as-shine" x="3.4" y="-1.4" width="1.6" height="0.5" />
+      </g>
+      <g class="hat ninja">
+        <rect class="nj-mask" x="2" y="3.9" width="12" height="3.11" />
+        <rect class="nj-band" x="2" y="0.4" width="12" height="1.2" />
+        <rect class="nj-band" x="0.2" y="0.6" width="1.9" height="0.6" />
+        <rect class="nj-band" x="-1" y="1.2" width="1.6" height="0.6" />
+        <rect class="nj-knot" x="1.6" y="0.5" width="0.9" height="1" />
+        <rect class="nj-plate" x="6.8" y="0.6" width="2.4" height="0.8" />
+      </g>
+      <g class="hat crown">
+        <rect class="cr" x="4" y="-1.4" width="8" height="1.4" />
+        <rect class="cr" x="4" y="-3" width="1.4" height="1.6" />
+        <rect class="cr" x="7.3" y="-3.6" width="1.4" height="2.2" />
+        <rect class="cr" x="10.6" y="-3" width="1.4" height="1.6" />
+        <rect class="cr-red" x="7.6" y="-1.1" width="0.8" height="0.8" />
+        <rect class="cr-blue" x="5" y="-1" width="0.6" height="0.6" />
+        <rect class="cr-blue" x="10.4" y="-1" width="0.6" height="0.6" />
+      </g>
+      <g class="hat chef">
+        <rect class="toque" x="4" y="-5.6" width="8" height="2.2" />
+        <rect class="toque" x="5" y="-3.6" width="6" height="2.8" />
+        <rect class="toque-band" x="4.6" y="-1" width="6.8" height="1" />
+      </g>
       <g class="hat propeller">
         <rect class="pc-red" x="5" y="-2.6" width="1" height="0.6" />
         <rect class="pc-yellow" x="6" y="-2.6" width="2" height="0.6" />
@@ -285,10 +346,12 @@ function setState(next) {
   renderBubble();
 }
 
+const HATS = ['hard', 'propeller', 'miner', 'cowboy', 'wizard', 'pirate', 'astronaut', 'ninja', 'crown', 'chef'];
+
 function setHat(next) {
-  for (const h of ['hard', 'propeller', 'miner', 'agent47']) demo.classList.toggle(`hat-${h}`, h === next);
-  demo.classList.toggle('hat-on', ['hard', 'propeller', 'miner'].includes(next));
-  if (['hard', 'propeller', 'miner'].includes(next)) {
+  for (const h of [...HATS, 'agent47']) demo.classList.toggle(`hat-${h}`, h === next);
+  demo.classList.toggle('hat-on', HATS.includes(next));
+  if (HATS.includes(next)) {
     demo.classList.remove('hat-arrive');
     void demo.offsetWidth;
     demo.classList.add('hat-arrive');

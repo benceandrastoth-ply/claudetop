@@ -162,13 +162,13 @@ const BUBBLES_47 = {
 const isAgent = () => config.hat === 'agent47';
 
 function renderBubble() {
-  let html = (isAgent() ? BUBBLES_47 : BUBBLES)[state] || '';
+  let html = (isAgent() ? BUBBLES_47 : { ...BUBBLES, ...(HAT_BUBBLES[config.hat] || {}) })[state] || '';
   if (state === 'working' && taskMinutes >= 10) {
     html = sleepbag && !isAgent() ? `Still working… 😴 ${taskMinutes} min` : `${html} ${taskMinutes} min`;
   }
   if (gameLine) html = escapeHtml(gameLine);
   if (panicking) {
-    const lines = isAgent() ? PANIC_LINES_47 : PANIC_LINES;
+    const lines = isAgent() ? PANIC_LINES_47 : PANIC_LINES_HAT[config.hat] || PANIC_LINES;
     html = escapeHtml(lines[panicLine % lines.length]);
   }
   if (sceneLine) html = escapeHtml(sceneLine);
@@ -649,7 +649,7 @@ function makeFxHat(kind) {
   const hat = document.createElement('div');
   hat.className = 'fxhat';
   hat.innerHTML = `<svg viewBox="0 -5 16 5" width="96" height="30" shape-rendering="crispEdges">${
-    document.querySelector(`.hat.${kind}`).innerHTML
+    `<g class="${kind}">${document.querySelector(`.hat.${kind}`).innerHTML}</g>`
   }</svg>`;
   fx.appendChild(hat);
   return hat;
@@ -698,7 +698,7 @@ function poof(x, y) {
 // Changing hats: the old one pops off and tumbles away, the new one drops onto the head.
 function swapHat(from) {
   const head = headPoint();
-  if (['hard', 'propeller', 'miner'].includes(from)) {
+  if (HATS.includes(from)) {
     const old = makeFxHat(from);
     const dir = Math.random() < 0.5 ? -1 : 1;
     tween(750, (p) => {
@@ -1177,6 +1177,421 @@ async function digAndWhack(aim) {
   await digUp();
 }
 
+// ---------- the hat collection ----------
+// Hats worn on the head (Agent 47 is a whole outfit, so he's not on this list).
+const HATS = ['hard', 'propeller', 'miner', 'cowboy', 'wizard', 'pirate', 'astronaut', 'ninja', 'crown', 'chef'];
+const RIDES = ['cowboy', 'pirate', 'chef']; // horse, boat, meatball
+const HAT_SPEED = { cowboy: 1.7, pirate: 1.15, chef: 1.25, astronaut: 0.65, crown: 0.45, ninja: 1.4 };
+const HAT_BUBBLES = {
+  cowboy: { done: 'Yeehaw! ✓', waiting: 'Howdy! Need ya!' },
+  wizard: { working: 'Casting<span class="dots"><span>.</span><span>.</span><span>.</span></span>', nocredit: 'Out of mana 🪫', recharged: 'Mana restored! ✨' },
+  pirate: { done: 'Land ho! ✓', waiting: 'Ahoy! Need ye!', nocredit: 'Out of doubloons 🪫' },
+  astronaut: { done: 'Houston, it’s done. ✓', waiting: 'Houston, we need you.' },
+  ninja: { working: '…', done: 'Done. ✓', waiting: '!' },
+  crown: { done: 'Royally done. ✓', waiting: 'The crown requires you.' },
+  chef: { working: 'Cooking<span class="dots"><span>.</span><span>.</span><span>.</span></span>', done: 'Order up! ✓' },
+};
+const PANIC_LINES_HAT = {
+  pirate: ['MAN OVERBOARD!', 'ALL HANDS!', 'Arrr, it’s DONE!'],
+  cowboy: ['YEEHAW, IT’S DONE!', 'Round ’em up!'],
+  wizard: ['The spell is cast!!', 'COME SEE!!'],
+};
+
+// Long trips, by hat: the miner digs, the wizard teleports, the ninja dashes.
+function travelDone() {
+  puppet = false;
+  walker.target = null;
+  if (scene === 'returning' || scene === 'homing') endScene();
+  else walker.pauseUntil = performance.now() + pauseFor();
+}
+
+function sparkle(x, y, colors, n = 14, spread = 40) {
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('i');
+    s.className = 'spark';
+    const a = (Math.PI * 2 * i) / n;
+    const d = spread * (0.5 + Math.random() * 0.6);
+    s.style.left = `${x}px`;
+    s.style.top = `${y}px`;
+    s.style.setProperty('--c', colors[i % colors.length]);
+    s.style.setProperty('--dx', `${Math.cos(a) * d}px`);
+    s.style.setProperty('--dy', `${Math.sin(a) * d}px`);
+    fx.appendChild(s);
+    setTimeout(() => s.remove(), 1150);
+  }
+}
+
+function smokePuff(x, y, n = 5) {
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('div');
+    s.className = 'smoke';
+    s.style.left = `${x + (Math.random() - 0.5) * 30}px`;
+    s.style.top = `${y + (Math.random() - 0.5) * 16}px`;
+    s.style.setProperty('--dx', `${(Math.random() - 0.5) * 50}px`);
+    s.style.animationDelay = `${i * 40}ms`;
+    fx.appendChild(s);
+    setTimeout(() => s.remove(), 1400);
+  }
+}
+
+const MAGIC = ['#d8b4ff', '#b06cff', '#ffd23f', '#ffffff'];
+
+async function teleportTravel(x) {
+  puppet = true;
+  el.classList.remove('walking');
+  walker.dir = x >= walker.x ? 1 : -1;
+  sparkle(walker.x + WIDTH / 2, floorY(walker.x + WIDTH / 2) - 30, MAGIC);
+  el.classList.add('vanish');
+  await wait(350);
+  walker.x = x;
+  el.classList.remove('vanish');
+  el.classList.add('appear');
+  sparkle(x + WIDTH / 2, floorY(x + WIDTH / 2) - 30, MAGIC);
+  await wait(400);
+  el.classList.remove('appear');
+  travelDone();
+}
+
+async function dashTravel(x) {
+  puppet = true;
+  el.classList.remove('walking');
+  walker.dir = x >= walker.x ? 1 : -1;
+  const from = walker.x;
+  smokePuff(from + WIDTH / 2, floorY(from + WIDTH / 2) - 24);
+  el.classList.add('dashing');
+  await tween(Math.max(140, Math.abs(x - from) / 6), (p) => {
+    walker.x = from + (x - from) * easeInOut(p);
+  });
+  el.classList.remove('dashing');
+  smokePuff(x + WIDTH / 2, floorY(x + WIDTH / 2) - 24, 3);
+  travelDone();
+}
+
+const TRAVEL = { miner: (x) => digTravel(x), wizard: teleportTravel, ninja: dashTravel };
+
+// ---------- lock-in moves for the new hats ----------
+const handPoint = () => ({ x: walker.x + WIDTH / 2 + walker.dir * 46, y: window.innerHeight - currentBottom() - 28 });
+const tabCenter = (aim) => ({ x: aim.bar.x + aim.bar.w / 2, y: aim.bar.y + aim.bar.h / 2 });
+
+// A line from a to b (rope, beam, spear).
+function stretch(node, a, b) {
+  node.style.left = `${a.x}px`;
+  node.style.top = `${a.y}px`;
+  node.style.width = `${Math.hypot(b.x - a.x, b.y - a.y)}px`;
+  node.style.transform = `rotate(${Math.atan2(b.y - a.y, b.x - a.x)}rad)`;
+}
+
+function fxNode(className, html = '') {
+  const n = document.createElement('div');
+  n.className = className;
+  n.innerHTML = html;
+  fx.appendChild(n);
+  return n;
+}
+
+// Cowboy: twirl the lasso overhead, rope the tab, yank it away.
+async function lassoMove(aim) {
+  const target = tabCenter(aim);
+  walker.dir = target.x >= walker.x + WIDTH / 2 ? 1 : -1;
+  const over = fxNode('lasso-overhead');
+  const placeOver = () => {
+    const h = headPoint();
+    over.style.left = `${h.x + walker.dir * 12}px`;
+    over.style.top = `${h.y - 26}px`;
+  };
+  placeOver();
+  el.classList.add('throwing');
+  await wait(900);
+  over.remove();
+  const rope = fxNode('rope');
+  const loop = fxNode('lasso-loop');
+  const from = handPoint();
+  await tween(450, (p) => {
+    const pt = { x: from.x + (target.x - from.x) * p, y: from.y + (target.y - from.y) * p - 70 * Math.sin(Math.PI * p) };
+    stretch(rope, from, pt);
+    loop.style.left = `${pt.x}px`;
+    loop.style.top = `${pt.y}px`;
+  });
+  burst(target.x, target.y);
+  window.claudetop.lockInClose();
+  el.classList.remove('throwing');
+  el.classList.add('kick-windup');
+  lockInMessage = 'Yeehaw!';
+  renderBubble();
+  await tween(380, (p) => {
+    const pt = { x: target.x + (from.x - target.x) * p, y: target.y + (from.y - target.y) * p };
+    stretch(rope, from, pt);
+    loop.style.left = `${pt.x}px`;
+    loop.style.top = `${pt.y}px`;
+    loop.style.transform = `scale(${1 - p * 0.6})`;
+  });
+  el.classList.remove('kick-windup');
+  rope.remove();
+  loop.remove();
+}
+
+const FROG_SVG = `<svg viewBox="0 0 10 8" width="30" height="24" shape-rendering="crispEdges">
+  <rect x="1" y="3.4" width="8" height="3.6" /><rect x="2" y="1.8" width="6" height="2" />
+  <rect class="fg-dark" x="0" y="6" width="2.4" height="1.4" /><rect class="fg-dark" x="7.6" y="6" width="2.4" height="1.4" />
+  <rect class="fg-eye" x="2" y="0.6" width="1.8" height="1.8" /><rect class="fg-eye" x="6.2" y="0.6" width="1.8" height="1.8" />
+  <rect class="fg-pupil" x="2.6" y="1.1" width="0.8" height="0.8" /><rect class="fg-pupil" x="6.8" y="1.1" width="0.8" height="0.8" />
+</svg>`;
+
+// Wizard: a zap from the wand, and the tab turns into a frog that hops away.
+async function wandZap(aim) {
+  const target = tabCenter(aim);
+  walker.dir = target.x >= walker.x + WIDTH / 2 ? 1 : -1;
+  el.classList.add('throwing');
+  lockInMessage = 'Abracadabra!';
+  renderBubble();
+  await wait(450);
+  const beam = fxNode('beam');
+  stretch(beam, handPoint(), target);
+  sparkle(target.x, target.y, MAGIC, 18, 50);
+  await wait(450);
+  beam.remove();
+  el.classList.remove('throwing');
+  poof(target.x, target.y);
+  window.claudetop.lockInClose();
+  lockInMessage = 'Ribbit.';
+  renderBubble();
+  // The frog drops to the floor and hops off the far side of the screen.
+  const frog = fxNode('frog', FROG_SVG);
+  const away = target.x > window.innerWidth / 2 ? 1 : -1;
+  if (away < 0) frog.firstElementChild.style.transform = 'scaleX(-1)';
+  const place = (x, y) => {
+    frog.style.left = `${x - 15}px`;
+    frog.style.top = `${y - 24}px`;
+  };
+  let x = target.x;
+  const floor0 = floorY(x);
+  await tween(Math.max(350, Math.sqrt(Math.max(1, floor0 - target.y)) * 22), (p) => place(x, target.y + (floor0 - target.y) * p * p));
+  while (x > -40 && x < window.innerWidth + 40) {
+    const nx = x + away * 110;
+    await tween(380, (p) => place(x + (nx - x) * p, floorY(x) - 50 * Math.sin(Math.PI * p)));
+    x = nx;
+  }
+  frog.remove();
+}
+
+const CANNON_SVG = `<svg viewBox="0 0 14 10" width="42" height="30" shape-rendering="crispEdges">
+  <rect x="2" y="2" width="11" height="4" /><rect x="12" y="1.5" width="1.6" height="5" />
+  <rect class="cn-wheel" x="1.5" y="5" width="5" height="5" />
+</svg>`;
+
+// Pirate: roll out a cannon and fire at the tab.
+async function cannonMove(aim) {
+  const target = tabCenter(aim);
+  walker.dir = target.x >= walker.x + WIDTH / 2 ? 1 : -1;
+  const base = { x: walker.x + WIDTH / 2 + walker.dir * 62, y: floorY(walker.x + WIDTH / 2) - 18 };
+  const angle = Math.atan2(target.y - base.y, target.x - base.x);
+  const cannon = fxNode('cannon', CANNON_SVG);
+  cannon.style.left = `${base.x - 13}px`;
+  cannon.style.top = `${base.y - 12}px`;
+  cannon.style.transform = `rotate(${angle}rad)`;
+  poof(base.x, base.y);
+  lockInMessage = 'Ready the cannons!';
+  renderBubble();
+  await wait(800);
+  lockInMessage = 'FIRE!';
+  renderBubble();
+  const muzzle = { x: base.x + Math.cos(angle) * 30, y: base.y + Math.sin(angle) * 30 };
+  burst(muzzle.x, muzzle.y);
+  smokePuff(muzzle.x, muzzle.y, 3);
+  const ball = fxNode('ball');
+  await tween(Math.min(700, 200 + Math.hypot(target.x - muzzle.x, target.y - muzzle.y) * 0.4), (p) => {
+    ball.style.left = `${muzzle.x + (target.x - muzzle.x) * p}px`;
+    ball.style.top = `${muzzle.y + (target.y - muzzle.y) * p - 40 * Math.sin(Math.PI * p)}px`;
+  });
+  ball.remove();
+  const boom = fxNode('boom');
+  boom.style.left = `${target.x}px`;
+  boom.style.top = `${target.y}px`;
+  setTimeout(() => boom.remove(), 700);
+  smokePuff(target.x, target.y);
+  window.claudetop.lockInClose();
+  lockInMessage = 'Arrr!';
+  renderBubble();
+  await wait(700);
+  poof(base.x, base.y);
+  cannon.remove();
+}
+
+// Astronaut: jetpack up to the tab, launch it into space, float back down.
+async function jetpackMove(aim) {
+  const H = window.innerHeight;
+  const target = tabCenter(aim);
+  el.classList.add('jetpack');
+  lockInMessage = '3… 2… 1…';
+  renderBubble();
+  const from = { x: walker.x, b: currentBottom() };
+  walker.airBottom = from.b;
+  const to = { x: target.x - WIDTH / 2, b: H - (target.y + 25) - 60 };
+  walker.dir = to.x >= from.x ? 1 : -1;
+  await tween(Math.min(1600, 500 + Math.hypot(to.x - from.x, to.b - from.b) * 0.6), (p) => {
+    const e = easeInOut(p);
+    walker.x = from.x + (to.x - from.x) * e;
+    walker.airBottom = from.b + (to.b - from.b) * e;
+  });
+  el.classList.add('press');
+  await wait(120);
+  burst(target.x, target.y);
+  window.claudetop.lockInClose();
+  el.classList.remove('press');
+  // Off it goes.
+  const tab = fxNode('flying-tab');
+  tab.textContent = 'tab';
+  lockInMessage = 'To infinity!';
+  renderBubble();
+  const t0 = target.y - 14;
+  tween(900, (p) => {
+    tab.style.left = `${target.x + 10 * Math.sin(p * 12)}px`;
+    tab.style.top = `${t0 - (t0 + 80) * p * p}px`;
+  }).then(() => tab.remove());
+  await wait(400);
+  // Low gravity: drift down slowly.
+  el.classList.remove('jetpack');
+  const top = walker.airBottom;
+  const land = 4 + groundAt(walker.x);
+  await tween(Math.max(900, Math.sqrt(Math.max(1, top - land)) * 90), (p) => {
+    walker.airBottom = top + (land - top) * easeInOut(p);
+  });
+  walker.airBottom = null;
+  el.classList.add('landing');
+  await wait(300);
+  el.classList.remove('landing');
+}
+
+const SHURIKEN_SVG = `<svg viewBox="0 0 8 8" width="22" height="22" shape-rendering="crispEdges">
+  <rect x="3" y="0" width="2" height="8" /><rect x="0" y="3" width="8" height="2" />
+  <rect x="1.5" y="1.5" width="5" height="5" transform="rotate(45 4 4)" /><rect class="sh-hole" x="3.5" y="3.5" width="1" height="1" />
+</svg>`;
+
+// Ninja: a throwing star, and the tab is sliced clean through.
+async function shurikenMove(aim) {
+  const target = tabCenter(aim);
+  walker.dir = target.x >= walker.x + WIDTH / 2 ? 1 : -1;
+  el.classList.add('throwing');
+  await wait(220);
+  const star = fxNode('shuriken', SHURIKEN_SVG);
+  const from = handPoint();
+  await tween(Math.min(420, 150 + Math.hypot(target.x - from.x, target.y - from.y) * 0.25), (p) => {
+    star.style.left = `${from.x + (target.x - from.x) * p}px`;
+    star.style.top = `${from.y + (target.y - from.y) * p}px`;
+  });
+  el.classList.remove('throwing');
+  star.classList.add('stuck');
+  const slash = fxNode('slash');
+  slash.style.left = `${aim.bar.x}px`;
+  slash.style.top = `${aim.bar.y + aim.bar.h / 2 + aim.bar.w * 0.12}px`;
+  slash.style.width = `${aim.bar.w * 1.03}px`;
+  await wait(180);
+  window.claudetop.lockInClose();
+  lockInMessage = '…';
+  renderBubble();
+  await wait(700);
+  slash.classList.add('gone');
+  star.style.transition = 'opacity 0.4s';
+  star.style.opacity = '0';
+  await wait(450);
+  slash.remove();
+  star.remove();
+}
+
+// Crown: point at the tab, and a royal guard runs in to deal with it.
+async function royalGuardMove(aim) {
+  const target = tabCenter(aim);
+  walker.dir = target.x >= walker.x + WIDTH / 2 ? 1 : -1;
+  el.classList.add('pointing');
+  lockInMessage = 'Guards!';
+  renderBubble();
+  await wait(700);
+  const fromLeft = target.x > window.innerWidth / 2 ? false : true;
+  const guard = document.createElement('div');
+  guard.className = 'guard walking';
+  guard.innerHTML = `${sprite.outerHTML.replace(' id="sprite"', '')}`;
+  guard.style.setProperty('--clay', '#8f96a3');
+  guard.style.transform = 'scale(0.6)';
+  document.body.appendChild(guard);
+  const gs = guard.querySelector('.sprite');
+  const placeGuard = (x) => {
+    guard.style.left = `${x - 48}px`;
+    guard.style.top = `${floorY(x) - 60}px`;
+  };
+  const start = fromLeft ? -60 : window.innerWidth + 60;
+  const stop = target.x + (fromLeft ? -30 : 30);
+  gs.classList.toggle('flip', !fromLeft);
+  await tween(Math.max(500, Math.abs(stop - start) / 0.9), (p) => placeGuard(start + (stop - start) * p));
+  guard.classList.remove('walking');
+  lockInMessage = 'Off with its tab!';
+  renderBubble();
+  // The spear.
+  const spear = fxNode('spear');
+  const hand = { x: stop, y: floorY(stop) - 30 };
+  await tween(260, (p) => stretch(spear, hand, { x: hand.x + (target.x - hand.x) * p, y: hand.y + (target.y - hand.y) * p }));
+  burst(target.x, target.y);
+  window.claudetop.lockInClose();
+  await wait(350);
+  spear.remove();
+  el.classList.remove('pointing');
+  gs.classList.toggle('flip', fromLeft);
+  guard.classList.add('walking');
+  await tween(Math.max(500, Math.abs(stop - start) / 0.9), (p) => placeGuard(stop + (start - stop) * p));
+  guard.remove();
+}
+
+const PIE_SVG = `<svg viewBox="0 0 10 5.4" width="30" height="16" shape-rendering="crispEdges">
+  <rect class="pi-cream" x="1" y="0.6" width="8" height="2" /><rect class="pi-cream" x="2" y="0" width="6" height="1" />
+  <rect class="pi-cherry" x="4.4" y="-0.8" width="1.2" height="1" />
+  <rect class="pi-crust" x="0" y="2.4" width="10" height="1.4" /><rect class="pi-crust" x="1" y="3.8" width="8" height="1.6" />
+</svg>`;
+
+// Chef: a cream pie, right in the tab.
+async function pieMove(aim) {
+  const target = tabCenter(aim);
+  walker.dir = target.x >= walker.x + WIDTH / 2 ? 1 : -1;
+  el.classList.add('throwing');
+  lockInMessage = 'One pie, coming up!';
+  renderBubble();
+  await wait(400);
+  const pie = fxNode('pie', PIE_SVG);
+  const from = headPoint();
+  const dist = Math.hypot(target.x - from.x, target.y - from.y);
+  const arc = Math.min(220, 70 + dist * 0.2);
+  await tween(Math.min(900, 300 + dist * 0.4), (p) => {
+    pie.style.left = `${from.x + (target.x - from.x) * p}px`;
+    pie.style.top = `${from.y + (target.y - from.y) * p - arc * Math.sin(Math.PI * p)}px`;
+    pie.style.transform = `rotate(${walker.dir * 300 * p}deg)`;
+  });
+  el.classList.remove('throwing');
+  pie.remove();
+  for (let i = 0; i < 12; i++) {
+    const c = document.createElement('i');
+    c.className = 'cream';
+    c.style.left = `${target.x}px`;
+    c.style.top = `${target.y}px`;
+    const a = Math.random() * Math.PI * 2;
+    c.style.setProperty('--dx', `${Math.cos(a) * (20 + Math.random() * 40)}px`);
+    c.style.setProperty('--dy', `${Math.sin(a) * (10 + Math.random() * 25) + 20}px`);
+    fx.appendChild(c);
+    setTimeout(() => c.remove(), 950);
+  }
+  window.claudetop.lockInClose();
+  lockInMessage = 'Pie-d. 🥧';
+  renderBubble();
+  await wait(600);
+}
+
+const HAT_MOVES = {
+  cowboy: lassoMove,
+  wizard: wandZap,
+  pirate: cannonMove,
+  astronaut: jetpackMove,
+  ninja: shurikenMove,
+  crown: royalGuardMove,
+  chef: pieMove,
+};
+
 async function lockIn(job) {
   // Let a dig or a TV kick finish first.
   for (let i = 0; puppet && i < 60; i++) await wait(100);
@@ -1194,6 +1609,7 @@ async function lockIn(job) {
     else if (config.hat === 'propeller') await flyAndBonk(aim);
     else if (config.hat === 'miner') await digAndWhack(aim);
     else if (config.hat === 'agent47') await duckStrike(aim);
+    else if (HAT_MOVES[config.hat]) await HAT_MOVES[config.hat](aim);
     else await strike(aim);
   } catch {}
   window.claudetop.lockInClose(); // in case the move never got there
@@ -1204,6 +1620,7 @@ async function lockIn(job) {
   el.classList.remove('lockin', 'leap', 'flying', 'throwing', 'hat-off', 'pickup', 'press', 'stunned', 'falling', 'crashed', 'ouch');
   fx.querySelectorAll('.dizzy').forEach((d) => d.remove());
   el.classList.remove('ceiling', 'swing', 'digging', 'underground', 'shovel-out');
+  el.classList.remove('jetpack', 'pointing', 'vanish', 'appear', 'dashing', 'kick-windup');
   walker.airBottom = null;
   walker.sink = 0;
   walker.rot = 0;
@@ -1301,9 +1718,9 @@ function updateDisguise(lead) {
 
 // Bubbles sit higher over tall hats.
 function updateHatClasses() {
-  const own = ['hard', 'propeller', 'miner'].includes(config.hat);
+  const own = HATS.includes(config.hat);
   el.classList.toggle('hat-on', own || !!seasonHat || disguise === 'mechanic');
-  el.classList.toggle('tall-hat', disguise === 'chef' || disguise === 'flamingo' || seasonHat === 'party');
+  el.classList.toggle('tall-hat', disguise === 'chef' || disguise === 'flamingo' || seasonHat === 'party' || ['wizard', 'chef'].includes(config.hat));
 }
 
 // ---------- Agent 47's mission rating ----------
@@ -1441,7 +1858,7 @@ let fireworksTimer = null;
 function applySeason() {
   season = config.seasonal === false ? { hat: null, snow: false, fireworks: false, cockade: false } : seasonFor(seasonDate());
   seasonHat = ['none', 'agent47'].includes(config.hat) ? season.hat : null; // a hat of your own wins (47 has none)
-  const ownHat = ['hard', 'propeller', 'miner'].includes(config.hat);
+  const ownHat = HATS.includes(config.hat);
   if (isBirthday() && !ownHat) seasonHat = 'party';
   el.classList.toggle('night-cap', isNight() && !ownHat && !seasonHat);
   if (isBirthday() && !confettiTimer) confettiTimer = setInterval(confetto, 280);
@@ -2063,8 +2480,8 @@ function speedFor() {
   if (dancing || tv || crying || gaming || sleepbag) return 0;
   if (config.mode !== 'walk') return 0;
   if (state === 'working' && held === 'coffee') return isAgent() ? 32 : 45; // no spilling
-  if (state === 'working') return isAgent() ? 47 : 70;
-  if (state === 'done' || state === 'recharged') return 30;
+  if (state === 'working') return isAgent() ? 47 : 70 * (HAT_SPEED[config.hat] || 1);
+  if (state === 'done' || state === 'recharged') return 30 * (HAT_SPEED[config.hat] || 1);
   return 0; // waiting, out of credits, resting: stand still
 }
 
@@ -2113,8 +2530,8 @@ function tick(t) {
     let moving = false;
     if (speed > 0 && t >= walker.pauseUntil) {
       if (walker.target === null) pickTarget();
-      if (isMiner() && !panicking && !dragging && Math.abs(walker.target - walker.x) > DIG_MIN_TRIP) {
-        digTravel(walker.target);
+      if (TRAVEL[config.hat] && !panicking && !dragging && Math.abs(walker.target - walker.x) > DIG_MIN_TRIP) {
+        TRAVEL[config.hat](walker.target);
         requestAnimationFrame(tick);
         return;
       }
@@ -2134,6 +2551,7 @@ function tick(t) {
       }
     }
     el.classList.toggle('walking', moving);
+    el.classList.toggle('riding', moving && RIDES.includes(config.hat));
   }
 
   const ground = groundAt(walker.x);
@@ -2313,10 +2731,7 @@ window.claudetop.onConfig((cfg) => {
     window.claudetop.setFixedX(config.fixedX);
   }
   updateHatClasses();
-  el.classList.toggle('hat-hard', config.hat === 'hard');
-  el.classList.toggle('hat-propeller', config.hat === 'propeller');
-  el.classList.toggle('hat-miner', config.hat === 'miner');
-  el.classList.toggle('hat-agent47', config.hat === 'agent47');
+  for (const h of [...HATS, 'agent47']) el.classList.toggle(`hat-${h}`, config.hat === h);
   if (hatChanged) renderBubble(); // Agent 47 has his own lines
   if (hatChanged && !puppet && entered) swapHat(oldHat);
   if (!firstConfig && !!cfg.hitmanRunning !== wasRunning) hitmanChanged(!!cfg.hitmanRunning, hatChanged);

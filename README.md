@@ -45,6 +45,14 @@ the session or its title looks like a Claude Code title (`✳ topic`, `◑ topic
   20 August). Only when Claude has no hat of its own.
 - **Become Agent 47 while Hitman runs**: start any Hitman game and Claude suits up; quit it and its
   usual hat comes back. Your saved hat isn't touched.
+- **More hats**, each with its own way of getting around and its own lock-in move:
+  - cowboy hat: rides a horse; lassos the tab ("Yeehaw!")
+  - wizard hat: teleports on long trips; zaps the tab into a frog that hops away
+  - pirate hat: sails a little boat; fires a cannon at the tab
+  - astronaut helmet: low-gravity hops; jetpacks up and launches the tab into space
+  - ninja headband: dashes in a blur; a throwing star slices the tab
+  - crown: walks slowly in a royal cape; a guard runs in and spears the tab ("Off with its tab!")
+  - chef hat: rolls along on a giant meatball; a cream pie to the tab
 - **Sounds**: an 8-bit jingle when work is done, a ping when Claude Code needs you (Agent 47 gets
   lower ones).
 - **Do not disturb**: switch it on by hand, or let it switch itself on while any app uses the

@@ -576,6 +576,13 @@ function menuTemplate() {
         ['hard', 'Hard hat'],
         ['propeller', 'Propeller beanie'],
         ['miner', 'Miner hat (digs instead of walking)'],
+        ['cowboy', 'Cowboy hat (rides a horse)'],
+        ['wizard', 'Wizard hat (teleports)'],
+        ['pirate', 'Pirate hat (sails a boat)'],
+        ['astronaut', 'Astronaut helmet (low gravity)'],
+        ['ninja', 'Ninja headband (dashes)'],
+        ['crown', 'Crown (royal walk)'],
+        ['chef', 'Chef hat (rolls on a meatball)'],
         ['agent47', 'Agent 47 (suit, red tie, barcode)'],
       ].map(([id, label]) => ({
         label,

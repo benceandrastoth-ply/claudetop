@@ -1187,3 +1187,223 @@ svg .nightcap .nc-pom { fill: #f2f2f2; }
 @keyframes achin { from { opacity: 0; transform: translate(-50%, 14px) scale(0.8); } }
 #claude[class*="disguise-"] .hat.nightcap { display: none; }
 #claude.flung .bubble, #claude.held .bubble { transition: none; }
+
+/* ---------- more hats ---------- */
+#claude.hat-cowboy .hat.cowboy,
+#claude.hat-wizard .hat.wizard,
+#claude.hat-pirate .hat.pirate,
+#claude.hat-astronaut .hat.astronaut,
+#claude.hat-ninja .hat.ninja,
+#claude.hat-crown .hat.crown,
+#claude.hat-chef .hat.chef { display: inline; }
+svg .cowboy .cb { fill: #a0662f; }
+svg .cowboy .cb-dent { fill: #7e4c1f; }
+svg .cowboy .cb-band { fill: #3a2410; }
+svg .wizard .wz { fill: #5a3d9e; }
+svg .wizard .wz-band { fill: #3c2775; }
+svg .wizard .wz-star { fill: #ffd23f; }
+svg .pirate .pr { fill: #1f1f24; }
+svg .pirate .pr-trim { fill: #d4a017; }
+svg .pirate .pr-skull { fill: #f2f2f2; }
+svg .pirate .pr-eyes { fill: #1f1f24; }
+svg .pirate .pr-strap, svg .pirate .pr-patch { fill: #111; }
+svg .astronaut .as-glass { fill: rgba(190, 225, 255, 0.22); stroke: #e6eef5; stroke-width: 0.45; }
+svg .astronaut .as-ring { fill: #d9dee5; }
+svg .astronaut .as-ant { fill: #9aa3ad; }
+svg .astronaut .as-light { fill: #ff5f5f; }
+svg .astronaut .as-shine { fill: rgba(255, 255, 255, 0.85); }
+svg .ninja .nj-mask { fill: #24252d; }
+svg .ninja .nj-band { fill: #c8102e; }
+svg .ninja .nj-knot { fill: #a00d24; }
+svg .ninja .nj-plate { fill: #b7bec7; }
+svg .crown .cr { fill: #f2c230; }
+svg .crown .cr-red { fill: #d32f2f; }
+svg .crown .cr-blue { fill: #3d8bfd; }
+svg .chef .toque { fill: #f6f6f2; }
+svg .chef .toque-band { fill: #e0e0da; }
+#claude.hat-astronaut .light { animation: blinkc 1.2s steps(1) infinite; }
+svg .astronaut .as-light { animation: blinkc 1.2s steps(1) infinite; }
+
+/* the king's cape */
+.cape { display: none; }
+#claude.hat-crown .cape { display: inline; }
+svg .cape .cp { fill: #8e1b2a; }
+svg .cape .cp-fur { fill: #f4f1ea; }
+#claude.hat-crown.walking .bob { animation: royal 0.9s ease-in-out infinite; }
+@keyframes royal { 50% { transform: translateY(-1px) rotate(-1.5deg); } }
+#claude.hat-crown.walking .legs-a { animation: step 0.9s steps(1) infinite; }
+#claude.hat-crown.walking .legs-b { animation: step 0.9s steps(1) infinite 0.45s; }
+
+/* the astronaut walks on the moon */
+#claude.hat-astronaut.walking .bob { animation: moonhop 0.9s ease-in-out infinite; }
+@keyframes moonhop {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px) rotate(2deg); }
+}
+#claude.hat-astronaut.walking .legs-a, #claude.hat-astronaut.walking .legs-b { animation: none; transform: translateY(0.6px); }
+
+/* rides: horse (cowboy), boat (pirate), meatball (chef) */
+.ride { position: absolute; left: 0; bottom: 0; display: none; pointer-events: none; }
+.ride > g { display: none; }
+#claude.riding.hat-cowboy .ride, #claude.riding.hat-pirate .ride, #claude.riding.hat-chef .ride { display: block; }
+#claude.hat-cowboy .ride .horse, #claude.hat-pirate .ride .boat, #claude.hat-chef .ride .meatball { display: inline; }
+#claude.riding .bob { position: relative; }
+#claude.riding.hat-cowboy .bob { top: -32px; }
+#claude.hat-cowboy .ride { width: 128px; height: 56px; left: -16px; }
+#claude.riding.hat-pirate .bob { top: -12px; }
+#claude.riding.hat-pirate .ride { z-index: 2; }
+#claude.riding.hat-chef .bob { top: -38px; }
+#claude.riding.hat-cowboy .legs-a, #claude.riding.hat-cowboy .legs-b,
+#claude.riding.hat-pirate .legs-a, #claude.riding.hat-pirate .legs-b { display: none; }
+#claude.riding .bubble { bottom: 130px; }
+#claude.riding .shadow { left: 6px; right: 6px; }
+svg .horse .hs { fill: #8a5a33; }
+svg .horse .hs-tail, svg .horse .hs-mane { fill: #3a2410; }
+svg .horse .hs-eye { fill: #111; }
+svg .horse .hs-saddle { fill: #b23a3a; }
+.ride .hs-legs-a { animation: step 0.24s steps(1) infinite; }
+.ride .hs-legs-b { animation: step 0.24s steps(1) infinite 0.12s; }
+#claude.riding.hat-cowboy .ride .horse { animation: gallop 0.24s steps(2) infinite; }
+@keyframes gallop { 50% { transform: translateY(-0.6px); } }
+svg .boat .bt { fill: #8a5a33; }
+svg .boat .bt-stripe { fill: #f2f2f2; }
+svg .boat .bt-mast { fill: #6b4423; }
+svg .boat .bt-flag { fill: #1f1f24; }
+svg .boat .wv { fill: #4aa3df; }
+.ride .waves { animation: waves 0.8s linear infinite; }
+@keyframes waves { to { transform: translateX(-5px); } }
+#claude.riding.hat-pirate .ride .boat { animation: rock 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 80%; }
+@keyframes rock { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+svg .meatball .mb { fill: #8b4a2b; }
+svg .meatball .mb-spot { fill: #6b3520; }
+svg .meatball .mb-sauce { fill: #d63b2a; }
+#claude.riding.hat-chef .ride .meatball { animation: roll 0.6s linear infinite; transform-box: fill-box; transform-origin: 50% 50%; }
+@keyframes roll { to { transform: rotate(360deg); } }
+#claude.riding.hat-chef .bob { animation: balance 0.6s ease-in-out infinite; }
+@keyframes balance { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+
+/* the wizard teleports, the ninja dashes */
+#claude.vanish .sprite { animation: vanish 0.35s ease-in forwards; }
+@keyframes vanish { to { transform: scale(0.1) rotate(200deg); opacity: 0; } }
+#claude.appear .sprite { animation: appear 0.4s ease-out; }
+@keyframes appear { from { transform: scale(0.1) rotate(-200deg); opacity: 0; } }
+#claude.dashing .bob { transform: skewX(-20deg) scaleX(1.15); filter: blur(1.2px); }
+#claude.dashing .bubble { opacity: 0; transition: none; }
+
+/* ---------- lock-in props for the new hats ---------- */
+.rope { position: absolute; height: 2px; background: #c9a46a; transform-origin: 0 50%; pointer-events: none; }
+.lasso-loop {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border: 2.5px solid #c9a46a;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.lasso-overhead {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border: 2.5px solid #c9a46a;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: overhead 0.35s linear infinite;
+}
+@keyframes overhead { from { transform: scaleY(0.3) rotate(0); } to { transform: scaleY(0.3) rotate(360deg); } }
+.beam {
+  position: absolute;
+  height: 5px;
+  margin-top: -2.5px;
+  background: linear-gradient(90deg, #f3dcff, #b06cff);
+  box-shadow: 0 0 10px #b06cff, 0 0 3px #fff;
+  border-radius: 3px;
+  transform-origin: 0 50%;
+  pointer-events: none;
+  animation: beam 0.08s steps(2) infinite;
+}
+@keyframes beam { 50% { opacity: 0.6; height: 3px; } }
+.frog, .cannon, .pie, .shuriken, .flying-tab, .spear, .guard { position: absolute; pointer-events: none; }
+.frog svg rect { fill: #4caf50; }
+.frog svg .fg-dark { fill: #2e7d32; }
+.frog svg .fg-eye { fill: #fff; }
+.frog svg .fg-pupil { fill: #111; }
+.cannon { width: 42px; height: 30px; transform-origin: 30% 70%; }
+.cannon svg rect { fill: #2b2b33; }
+.cannon svg .cn-wheel { fill: #6b4423; }
+.ball { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #1d1d22; box-shadow: inset -2px -2px 0 #000; pointer-events: none; }
+#claude.jetpack .sprite::after {
+  content: "";
+  position: absolute;
+  left: 38px;
+  bottom: -18px;
+  width: 20px;
+  height: 22px;
+  border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
+  background: radial-gradient(circle at 50% 30%, #fff6c2, #ffb347 45%, #ff5f2e 70%, transparent 72%);
+  animation: flame 0.08s steps(2) infinite;
+}
+@keyframes flame { 50% { transform: scaleY(0.75); } }
+.flying-tab {
+  padding: 6px 14px;
+  border-radius: 8px 8px 2px 2px;
+  background: #3a3a44;
+  color: #fff;
+  font: 600 12px "Segoe UI", sans-serif;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.flying-tab::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 14px;
+  height: 20px;
+  margin-left: -7px;
+  border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
+  background: radial-gradient(circle at 50% 30%, #fff6c2, #ffb347 45%, #ff5f2e 70%, transparent 72%);
+  animation: flame 0.08s steps(2) infinite;
+}
+.shuriken { width: 22px; height: 22px; margin: -11px 0 0 -11px; animation: shuri 0.12s linear infinite; }
+.shuriken.stuck { animation: none; }
+.shuriken svg rect { fill: #9aa3ad; }
+.shuriken svg .sh-hole { fill: #1d1d22; }
+@keyframes shuri { to { transform: rotate(360deg); } }
+.slash {
+  position: absolute;
+  height: 3px;
+  background: #fff;
+  box-shadow: 0 0 8px #fff, 0 0 2px #9fd8ff;
+  transform-origin: 0 50%;
+  pointer-events: none;
+  animation: slash 0.18s ease-out forwards;
+}
+@keyframes slash { from { transform: rotate(-14deg) scaleX(0); } to { transform: rotate(-14deg) scaleX(1); } }
+.slash.gone { opacity: 0; transition: opacity 0.4s; }
+.guard { width: 96px; transform-origin: 50% 100%; }
+.guard .bubble { font-size: 18px; }
+.spear { height: 2px; background: #6b4423; transform-origin: 0 50%; }
+.spear::after { content: ""; position: absolute; right: -6px; top: -3px; border: 4px solid transparent; border-left: 7px solid #c9ced6; }
+.pie { width: 30px; height: 16px; margin: -8px 0 0 -15px; }
+.pie svg .pi-crust { fill: #d9a35e; }
+.pie svg .pi-cream { fill: #fffaf0; }
+.pie svg .pi-cherry { fill: #d32f2f; }
+.cream {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: #fffaf0;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  animation: cream 0.9s ease-out forwards;
+}
+@keyframes cream {
+  from { transform: translate(0, 0) scale(0.6); opacity: 1; }
+  to { transform: translate(var(--dx), var(--dy)) scale(1.1); opacity: 0; }
+}
+#claude.pointing .arm-r { transform: translate(0.4px, -2.6px); }
+#claude.tall-hat.riding .bubble { bottom: 134px; }
