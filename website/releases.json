@@ -1,5 +1,20 @@
 [
   {
+    "version": "0.8.3",
+    "date": "2026-10-25",
+    "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.3/claudetop-Setup-0.8.3.exe",
+    "linux": {
+      "appimage": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.3/claudetop-0.8.3-x86_64.AppImage",
+      "deb": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.3/claudetop-0.8.3-amd64.deb"
+    },
+    "size": 82004619,
+    "sha256": "05dec23629000fcb1f84f1189446dfac65298d040160bf3a369f717b3c798741",
+    "notes": [
+      "The extra Claudes for your other sessions now each wear a hat of their own. Scroll over one to change it.",
+      "A chef has something to say when Agent 47 shows up in his chef disguise."
+    ]
+  },
+  {
     "version": "0.8.2",
     "date": "2026-10-25",
     "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.2/claudetop-Setup-0.8.2.exe",
