@@ -16,4 +16,7 @@ contextBridge.exposeInMainWorld('claudetop', {
   setIgnoreMouse: (ignore) => ipcRenderer.send('set-ignore-mouse', ignore),
   setFixedX: (x) => ipcRenderer.send('set-fixed-x', x),
   showMenu: () => ipcRenderer.send('show-menu'),
+  jumpTo: (chain) => ipcRenderer.send('jump-to', chain),
+  setHidden: (hidden) => ipcRenderer.send('set-hidden', hidden),
+  onGame: (fn) => ipcRenderer.on('game', (_e, game) => fn(game)),
 });

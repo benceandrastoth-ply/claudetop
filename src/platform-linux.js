@@ -90,6 +90,8 @@ function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn 
   const blockRe = new RegExp(blocklist, 'i');
   let stopped = false;
   let lastFocus = '';
+  let lastRect = '';
+  let lastWindow = '';
   let lastMedia = '';
   let cooldownUntil = 0;
   let tick = 0;
@@ -106,10 +108,14 @@ function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn 
         onFocus({ pid: 0, name: '', title: '', available: false });
       }
       if (w) {
-        const key = `${w.pid}\t${w.name}\t${w.title}`;
+        // Its size and position (game mode spots fullscreen windows): on every switch, and
+        // once a second in case it goes fullscreen.
+        if (available.xwininfo && (w.id !== lastWindow || tick % 4 === 0)) lastRect = await windowRect(w.id);
+        lastWindow = w.id;
+        const key = `${w.pid}\t${w.name}\t${w.title}\t${lastRect}`;
         if (key !== lastFocus) {
           lastFocus = key;
-          onFocus({ pid: w.pid, name: w.name, title: w.title, available: true });
+          onFocus({ pid: w.pid, name: w.name, title: w.title, rect: lastRect, available: true });
         }
         const isBrowser = browsers.some((b) => w.name.toLowerCase().startsWith(b));
         if (lockIn && available.xdotool && isBrowser && Date.now() > cooldownUntil && blockRe.test(w.title)) {
@@ -136,6 +142,17 @@ function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn 
   return {
     stop() {
       stopped = true;
+    },
+    // Bring up the first of these processes that has a visible window.
+    async focusPids(pids) {
+      if (!available.xdotool) return;
+      for (const pid of pids) {
+        const ids = (await run('xdotool', ['search', '--onlyvisible', '--pid', String(pid)])).split('\n').filter(Boolean);
+        if (ids.length) {
+          await run('xdotool', ['windowactivate', ids[ids.length - 1]]);
+          return;
+        }
+      }
     },
     // Ctrl+W, but only if that same window is still in front.
     async closeTab(id) {

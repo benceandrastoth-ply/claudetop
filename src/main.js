@@ -85,6 +85,8 @@ let config = {
   dance: 'apps', // 'off' | 'apps' (music apps only) | 'any' (anything playing, browsers too)
   tv: true, // sit down and watch a little TV while you watch videos
   jealous: true, // cry when you open another AI
+  gameMode: true, // hide on a fullscreen game's screen, play along on the others
+  seasonal: true, // snow in winter, a pumpkin at Halloween...
   setupDone: false, // Linux: the first-launch question has been asked (Windows asks in the installer)
   preview: null,
 };
@@ -193,6 +195,7 @@ function watchFocusLinux() {
     onFocus: (f) => {
       focus = f;
       if (win) win.webContents.send('focus', focus);
+      updateGame();
     },
     onMedia: (m) => {
       media = m;
@@ -239,10 +242,11 @@ function watchFocus() {
         if (win) win.webContents.send('media', media);
         continue;
       }
-      const [pid, name, ...title] = line.split('\t');
-      focus = { pid: Number(pid), name: name || '', title: title.join('\t') };
+      const [pid, name, title, rect] = line.split('\t');
+      focus = { pid: Number(pid), name: name || '', title: title || '', rect: rect || '' };
     }
     if (win) win.webContents.send('focus', focus);
+    updateGame();
   });
   watcher.on('exit', () => {
     if (focusWatcher !== watcher) return; // replaced on purpose
@@ -250,6 +254,60 @@ function watchFocus() {
     setTimeout(watchFocus, 2000);
   });
 }
+
+// ---------- game mode ----------
+// A window covering a whole monitor is a game (or a fullscreen video). The page decides what to
+// do: hide if Claude is on that monitor, otherwise grab a controller and play along.
+const NOT_GAMES = /^(explorer|claudetop|electron|searchhost|searchapp|shellexperiencehost|startmenuexperiencehost|lockapp|textinputhost|gnome-shell|plasmashell|xfdesktop|nautilus|desktop)$/i;
+let lastGame = '';
+
+function updateGame() {
+  let game = { active: false };
+  const rect = parseRect(focus.rect);
+  if (config.gameMode && rect && !NOT_GAMES.test(focus.name || '')) {
+    const d = screen.getDisplayMatching(rect);
+    const b = d.bounds;
+    const covers = rect.x <= b.x + 2 && rect.y <= b.y + 2 && rect.x + rect.width >= b.x + b.width - 2 && rect.y + rect.height >= b.y + b.height - 2;
+    if (covers) {
+      const browser = BROWSERS.some((n) => (focus.name || '').toLowerCase().startsWith(n));
+      game = { active: true, name: focus.name, title: focus.title, browser, bounds: b };
+    }
+  }
+  const key = JSON.stringify(game);
+  if (key === lastGame) return;
+  lastGame = key;
+  if (win) win.webContents.send('game', game);
+}
+
+// Click on Claude: bring up the terminal (or editor) that session runs in. The hook recorded
+// the session's process chain; the first of those processes with a window is the one.
+const NOT_HOSTS = /^(explorer|svchost|services|wininit|winlogon|sihost|systemd|init|login|sshd|gnome-session-b|gnome-shell|kdeinit5|plasmashell)(\.exe)?$/i;
+ipcMain.on('jump-to', (_e, chain) => {
+  const pids = (chain || [])
+    .map((entry) => {
+      const [pid, ...name] = String(entry).split(':');
+      return { pid: Number(pid), name: name.join(':') };
+    })
+    .filter((p) => p.pid > 0 && !NOT_HOSTS.test(p.name))
+    .map((p) => p.pid);
+  if (isLinux) {
+    if (focusWatcher) focusWatcher.focusPids(pids);
+    return;
+  }
+  try { fs.writeFileSync(CMD_FILE, `focus ${pids.join(',')}`); } catch {}
+});
+
+// Game mode on Claude's screen: get out of the way entirely.
+let hiddenForGame = false;
+ipcMain.on('set-hidden', (_e, hidden) => {
+  if (!win || hidden === hiddenForGame) return;
+  hiddenForGame = hidden;
+  if (hidden) win.hide();
+  else {
+    win.showInactive();
+    win.setAlwaysOnTop(true, 'screen-saver');
+  }
+});
 
 // ---------- lock-in ----------
 // "l,t,r,b" in physical pixels -> a DIP rect in screen coordinates (or null).
@@ -374,6 +432,12 @@ function createWindow() {
     pushConfig();
     win.webContents.send('focus', focus);
     win.webContents.send('media', media);
+    lastGame = '';
+    if (hiddenForGame) {
+      hiddenForGame = false; // the page starts out visible and will say if it wants hiding
+      win.showInactive();
+    }
+    updateGame();
     pushSessions();
   });
 
@@ -463,6 +527,21 @@ function menuTemplate() {
       type: 'checkbox',
       checked: config.tv,
       click: (item) => setFlag('tv', item.checked),
+    },
+    {
+      label: 'Game mode (hide during fullscreen games)',
+      type: 'checkbox',
+      checked: config.gameMode,
+      click: (item) => {
+        setFlag('gameMode', item.checked);
+        updateGame();
+      },
+    },
+    {
+      label: 'Seasonal surprises',
+      type: 'checkbox',
+      checked: config.seasonal,
+      click: (item) => setFlag('seasonal', item.checked),
     },
     {
       label: 'Cry when you open another AI',
@@ -643,8 +722,9 @@ function watchCursorLinux() {
   setInterval(() => {
     if (!win || !claudeRect) return;
     const p = screen.getCursorScreenPoint();
-    const r = claudeRect;
-    const over = p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
+    // Claude plus any extra Claudes for other sessions.
+    const rects = Array.isArray(claudeRect) ? claudeRect : [claudeRect];
+    const over = rects.some((r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h);
     const want = over || pageWantsMouse;
     if (want !== mouseEnabled) {
       mouseEnabled = want;

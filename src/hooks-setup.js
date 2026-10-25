@@ -12,6 +12,7 @@ const EVENTS = [
   'UserPromptSubmit',
   'PreToolUse',
   'PostToolUse',
+  'PostToolUseFailure',
   'Notification',
   'Stop',
   'StopFailure',
@@ -69,9 +70,16 @@ function installedCommand() {
 
 // Re-point the hooks at the app if it moved (e.g. an AppImage in a new folder), without
 // rewriting settings.json when nothing changed.
+// Also adds any events a newer version listens to.
 function refreshHooks(command) {
   const current = installedCommand();
-  if (current && current !== `${command} ${MARKER}`) installHooks(command);
+  if (!current) return;
+  let missing = false;
+  try {
+    const hooks = readSettings().hooks || {};
+    missing = EVENTS.some((e) => !(hooks[e] || []).some((g) => (g.hooks || []).some(isOurs)));
+  } catch {}
+  if (missing || current !== `${command} ${MARKER}`) installHooks(command);
 }
 
 function hooksInstalled() {

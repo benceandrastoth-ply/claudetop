@@ -120,6 +120,7 @@ function stateFor(input) {
     case 'UserPromptSubmit':
     case 'PreToolUse':
     case 'PostToolUse':
+    case 'PostToolUseFailure':
     case 'SubagentStart':
       return 'working';
     case 'Notification':
@@ -136,6 +137,37 @@ function stateFor(input) {
     default:
       return null;
   }
+}
+
+// A command that runs a test suite.
+const TEST_RE = /\b(test|tests|jest|vitest|pytest|mocha|ava|tap|rspec|phpunit|ctest|unittest)\b|\bgo test\b|\bcargo test\b|\bnpm t\b/i;
+
+// Per-task bookkeeping for the little Claude's extras: when the task started (long-task timer),
+// how many permission prompts it needed (Agent 47's rating), failed tool calls in a row (rage
+// quit) and whether the last test run failed (47's mechanic disguise).
+function taskStats(input, previous, now) {
+  const event = input.hook_event_name;
+  const newTask = event === 'UserPromptSubmit';
+  const stats = {
+    taskStart: newTask ? now : previous.taskStart || now,
+    prompts: newTask ? 0 : previous.prompts || 0,
+    errorStreak: newTask ? 0 : previous.errorStreak || 0,
+    testsFailed: newTask ? false : !!previous.testsFailed,
+  };
+  if (previous.rageAt && !newTask) stats.rageAt = previous.rageAt;
+  if (event === 'Notification' && input.notification_type === 'permission_prompt') stats.prompts++;
+  const command = input.tool_input && typeof input.tool_input.command === 'string' ? input.tool_input.command : '';
+  const isTest = /^(Bash|PowerShell)$/.test(input.tool_name || '') && TEST_RE.test(command);
+  if (event === 'PostToolUse') {
+    stats.errorStreak = 0;
+    if (isTest) stats.testsFailed = false;
+  }
+  if (event === 'PostToolUseFailure' && !input.is_interrupt) {
+    stats.errorStreak++;
+    if (stats.errorStreak % 3 === 0) stats.rageAt = now; // three in a row: flip the table
+    if (isTest) stats.testsFailed = true;
+  }
+  return stats;
 }
 
 function main() {
@@ -172,14 +204,30 @@ function main() {
     const resetAt = resetTime(creditError || '');
     if (resetAt) record.resetAt = resetAt;
   }
+  Object.assign(record, taskStats(input, previous, record.at));
+  writeRecord(file, JSON.stringify(record));
+}
+
+// Write via a temp file so claudetop never reads half a record. On Windows the rename fails
+// while claudetop has the file open for reading, so retry for a moment, then write in place.
+function writeRecord(file, text) {
   const tmp = file + '.' + process.pid + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(record));
-  fs.renameSync(tmp, file);
+  fs.writeFileSync(tmp, text);
+  for (let i = 0; i < 20; i++) {
+    try {
+      fs.renameSync(tmp, file);
+      return;
+    } catch {
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 15);
+    }
+  }
+  fs.rmSync(tmp, { force: true });
+  fs.writeFileSync(file, text);
 }
 
 // (claudetop's own exe runs this file with require(), so a test switch, not require.main.)
 if (!process.env.CLAUDETOP_HOOK_TEST) {
-  try { main(); } catch {}
+  try { main(); } catch (e) { if (process.env.CLAUDETOP_DEBUG) console.error(e); }
   process.exit(0);
 }
 

@@ -77,6 +77,14 @@
             claudetop connects to Claude Code when you install it. Every session reports in, so the little
             Claude on your taskbar changes the moment Claude Code does. Hover over it to see each session.
           </p>
+          <p>
+            Click it and you're back in Claude Code. Running more than one session? Each gets a little Claude
+            of its own colour, and clicking one takes you to that session.
+          </p>
+          <p>
+            While Claude Code works, Claude holds whatever fits the job: a magnifying glass while it searches,
+            a pencil while it edits, a terminal while it runs commands.
+          </p>
         </div>
         <ul class="states" id="state-list"></ul>
       </div>
@@ -98,6 +106,22 @@
           <div>
             <dt>Music and videos</dt>
             <dd>Put something on. Claude has opinions about what you listen to, and about being interrupted mid-episode.</dd>
+          </div>
+          <div>
+            <dt>Long jobs</dt>
+            <dd>Give Claude Code something big. Claude gets comfortable.</dd>
+          </div>
+          <div>
+            <dt>Bad days</dt>
+            <dd>Everybody has a limit. Three failed attempts in a row is Claude's.</dd>
+          </div>
+          <div>
+            <dt>Game mode</dt>
+            <dd>Go fullscreen and Claude gets out of the way. On your other screen, it might want a turn.</dd>
+          </div>
+          <div>
+            <dt>Holidays</dt>
+            <dd>Some days of the year don't go unnoticed. A few of them are very Hungarian.</dd>
           </div>
           <div>
             <dt>Loyalty</dt>
@@ -137,6 +161,14 @@
             <figcaption><b>Off the clock</b>Never panics. Not even when he should.</figcaption>
           </figure>
           <figure>
+            <div class="portrait" data-pose="chef"></div>
+            <figcaption><b>Dress code: varies</b>The job decides the outfit. Some outfits are rarer than others.</figcaption>
+          </figure>
+          <figure>
+            <div class="portrait" data-pose="rating"></div>
+            <figcaption><b>Rated on every contract</b>Every permission prompt is a witness.</figcaption>
+          </figure>
+          <figure>
             <div class="portrait" data-pose="duck"></div>
             <figcaption><b>Do not ask about the duck</b>He won't tell you either.</figcaption>
           </figure>
@@ -158,7 +190,7 @@
           </li>
           <li>
             <h3>Start Claude Code</h3>
-            <p>Give it a task and watch the taskbar. Right-click the little Claude for every option.</p>
+            <p>Give it a task and watch the taskbar. Click the little Claude to jump back to Claude Code, right-click it for every option.</p>
           </li>
         </ol>
         <a class="download download-small" id="download-setup" href="#releases">Download for Windows</a>
@@ -183,6 +215,10 @@
         <details>
           <summary>How do I check my download is genuine?</summary>
           <p>Each release below lists the installer's SHA-256 fingerprint. In PowerShell, run <code>Get-FileHash .\claudetop-Setup-*.exe</code> in your Downloads folder and check that the hash matches.</p>
+        </details>
+        <details>
+          <summary>Will it get in the way when I play games?</summary>
+          <p>No. When a game (or anything else) goes fullscreen, Claude hides on that screen until you're done. You can turn this off in the right-click menu under Game mode.</p>
         </details>
         <details>
           <summary>Does it work with the Claude app or claude.ai?</summary>

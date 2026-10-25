@@ -25,9 +25,10 @@
     <p>To do its job, claudetop reads a few things on your computer. All of it stays there.</p>
     <ul>
       <li><b>Claude Code's status.</b> If you let the installer connect it, claudetop adds hooks to <code>~/.claude/settings.json</code>. When Claude Code starts, uses a tool, finishes or stops, the hook saves a small status file in <code>~/.claude/claudetop/sessions/</code>: the event, the project folder, the tool name, the time, and which programs the session runs in. Files older than a day are deleted.</li>
-      <li><b>The window in front.</b> Its title and program name, to know whether you're looking at Claude Code, and, with Lock-in mode on, whether a browser tab's title matches its list of adult sites.</li>
+      <li><b>The window in front.</b> Its title and program name, to know whether you're looking at Claude Code, and, with Lock-in mode on, whether a browser tab's title matches its list of adult sites. Also its size and position, so Claude can get out of the way of fullscreen games and videos, and its title to notice other AI assistants.</li>
       <li><b>The browser's tab strip</b>, only when Lock-in mode closes a tab, to find where the tab is on screen.</li>
       <li><b>What's playing.</b> The app, artist, title and album that Windows' media controls report, so Claude can dance to music or watch videos with you.</li>
+      <li><b>Which window to bring up.</b> When you click the little Claude, it brings the window that session runs in to the front. That's the only time it switches windows.</li>
       <li><b>Your settings</b>, saved in <code>%APPDATA%\claudetop\config.json</code>.</li>
     </ul>
     <p>None of this is sent anywhere. The app contains no analytics, no crash reporting and no update checks, and makes no network connections at all. You can check: the source code is <a href="https://github.com/benceandrastoth-ply/claudetop">public on GitHub</a>.</p>

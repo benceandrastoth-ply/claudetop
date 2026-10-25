@@ -928,3 +928,187 @@ svg .suit .barcode, svg .suit .brow47 { fill: var(--ink); }
 .bolts span:nth-child(3) { left: 40px; animation-delay: 1.3s; --dx: 4px; font-size: 14px; }
 .recharged .bubble { background: #fff8d6; border-color: #d9a400; color: #6b4e00; }
 .recharged .bubble::after { background: #fff8d6; border-color: #d9a400; }
+
+/* ---------- what it's doing: a prop in hand ---------- */
+.tool, .pad, .bag, .disguise, .cockade { display: none; }
+#claude.tool-magnifier .tool.magnifier,
+#claude.tool-pencil .tool.pencil,
+#claude.tool-terminal .tool.terminal,
+#claude.tool-book .tool.book,
+#claude.tool-coffee .tool.coffee { display: inline; }
+#claude.holding .arm-r { animation: none; transform: translateY(-0.5px); }
+svg .mg-handle { fill: #6b4a2e; }
+svg .mg-lens { fill: rgba(170, 220, 255, 0.55); stroke: #3a3a3a; stroke-width: 0.45; }
+#claude.tool-magnifier .tool.magnifier { animation: scan 1.6s ease-in-out infinite; transform-box: view-box; }
+@keyframes scan { 50% { transform: translate(-0.6px, 0.4px); } }
+svg .pn-body { fill: #f5c518; }
+svg .pn-eraser { fill: #ef8fa0; }
+svg .pn-wood { fill: #e8c99a; }
+svg .pn-tip { fill: #333; }
+#claude.tool-pencil .tool.pencil { animation: scribble 0.3s steps(2) infinite; }
+@keyframes scribble { 50% { transform: rotate(-35deg) translate(0.5px, 0.3px); } }
+svg .tm-body { fill: #1e1e1e; }
+svg .tm-text { fill: #7cf06b; }
+svg .tm-cursor { fill: #7cf06b; animation: blinkc 0.8s steps(1) infinite; }
+@keyframes blinkc { 50% { opacity: 0; } }
+svg .bk-cover { fill: #8b3a3a; }
+svg .bk-page { fill: #fbf6e9; }
+svg .bk-line { fill: #b9b2a0; }
+svg .cf-mug { fill: #f4f4f4; }
+svg .cf-band { fill: var(--clay-dark); }
+svg .cf-steam { fill: rgba(255, 255, 255, 0.85); animation: cfsteam 1.4s ease-out infinite; }
+svg .cf-steam.s2 { animation-delay: 0.7s; }
+@keyframes cfsteam {
+  from { transform: translateY(0.8px); opacity: 0; }
+  40% { opacity: 1; }
+  to { transform: translateY(-1.6px); opacity: 0; }
+}
+/* coffee: the occasional sip */
+#claude.tool-coffee:not(.walking) .tool.coffee { animation: sip 4s ease-in-out infinite; transform-box: view-box; }
+@keyframes sip { 0%, 70%, 100% { transform: none; } 80%, 90% { transform: translate(-1.6px, -1.4px) rotate(-20deg); } }
+
+/* ---------- a very long task: sleeping bag ---------- */
+#claude.sleepbag .bag { display: inline; }
+#claude.sleepbag .arm, #claude.sleepbag .legs-a, #claude.sleepbag .legs-b,
+#claude.sleepbag .eyes-open, #claude.sleepbag .tool { display: none; }
+#claude.sleepbag .eyes-closed { display: inline; }
+#claude.sleepbag .zzz { display: block; }
+#claude.sleepbag .bob { animation: bagbreathe 3.2s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes bagbreathe { 50% { transform: scaleY(0.96); } }
+svg .bag-body { fill: #3f7d4f; }
+svg .bag-hood { fill: #335f3e; }
+svg .bag-zip { fill: #c9c9c9; }
+
+/* ---------- game mode: playing along on the other screen ---------- */
+#claude.gaming .pad { display: inline; }
+#claude.gaming .arm-l { transform: translate(2.6px, 1.8px); animation: none; }
+#claude.gaming .arm-r { transform: translate(-2.6px, 1.8px); animation: none; }
+#claude.gaming .legs-a, #claude.gaming .legs-b { transform: translateY(-1.5px); animation: none; }
+#claude.gaming .bob { animation: gamebob 0.9s ease-in-out infinite; }
+#claude.gaming .tool, #claude.gaming .zzz { display: none; }
+#claude.gaming .eyes-open { display: inline; transform: translateY(0.4px); }
+#claude.gaming .eyes-closed { display: none; }
+@keyframes gamebob { 0%, 100% { transform: translateY(9px); } 30% { transform: translateY(9px) rotate(-3deg); } 60% { transform: translateY(8px) rotate(3deg); } }
+svg .pad-body { fill: #2b2b33; }
+svg .pad-dpad { fill: #9a9aa6; }
+svg .pad-a { fill: #3cb371; animation: mash 0.25s steps(1) infinite; }
+svg .pad-b { fill: #e8484a; animation: mash 0.25s steps(1) infinite 0.12s; }
+@keyframes mash { 50% { opacity: 0.35; } }
+
+/* ---------- Agent 47's disguises ---------- */
+#claude.disguise-chef .disguise.chef,
+#claude.disguise-mechanic .disguise.mechanic,
+#claude.disguise-flamingo .disguise.flamingo { display: inline; }
+#claude.disguise-chef .suit, #claude.disguise-mechanic .suit, #claude.disguise-flamingo .suit { display: none; }
+#claude.disguise-chef.disguise-chef .tool.pencil, #claude.disguise-mechanic.disguise-mechanic .tool.tool { display: none; }
+svg .chef .coat, svg .chef .toque { fill: #f6f6f2; }
+svg .chef .toque-band { fill: #e0e0da; }
+svg .chef .coat-btn { fill: #1b1b1f; }
+#claude.disguise-chef svg .arm { fill: #f6f6f2; }
+svg .mechanic .overalls { fill: #3d5f99; }
+svg .mechanic .pocket { fill: #2f4d80; }
+svg .mechanic .cap { fill: #3d5f99; }
+svg .mechanic .cap-brim { fill: #2f4d80; }
+svg .mechanic .wrench { fill: #9aa3ad; }
+svg .mechanic .wrench-gap { fill: #1a1a1a; }
+#claude.disguise-mechanic svg .arm { fill: #3d5f99; }
+#claude.disguise-flamingo svg .body,
+#claude.disguise-flamingo svg .arm,
+svg .flamingo .fl { fill: #f48fb1; }
+svg .flamingo .fl-wing { fill: #ec6f9b; }
+#claude.disguise-flamingo svg .legs-a rect, #claude.disguise-flamingo svg .legs-b rect { fill: #e86a92; }
+svg .flamingo .fl-beak { fill: #fff3d6; }
+svg .flamingo .fl-tip, svg .flamingo .fl-eye { fill: #1a1a1a; }
+#claude.tall-hat .bubble { bottom: 108px; }
+#claude.tall-hat .info { bottom: 142px; }
+
+/* ---------- seasons ---------- */
+#claude.season-pumpkin .hat.pumpkin,
+#claude.season-santa .hat.santa,
+#claude.season-party .hat.party { display: inline; }
+#claude.wear-cockade .cockade { display: inline; }
+svg .pumpkin .pk { fill: #f08a24; }
+svg .pumpkin .pk-rib { fill: #d26f12; }
+svg .pumpkin .pk-face { fill: #3a2208; }
+svg .pumpkin .pk-stem { fill: #4f7a2b; }
+svg .santa .sa { fill: #d42f2f; }
+svg .santa .sa-fur { fill: #fbfbfb; }
+svg .party .pa-a { fill: #7b5cff; }
+svg .party .pa-b { fill: #ffd23f; }
+svg .party .pa-pom { fill: #ff5fa2; }
+svg .cockade .ck-g { fill: #2f8a3c; }
+svg .cockade .ck-w { fill: #fbfbfb; }
+svg .cockade .ck-r { fill: #d32f2f; }
+.flake {
+  position: absolute;
+  top: -8px;
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  box-shadow: 0 0 2px rgba(150, 190, 230, 0.9);
+  pointer-events: none;
+  animation: snowfall var(--t, 8s) linear forwards;
+}
+@keyframes snowfall {
+  0% { transform: translate(0, 0); opacity: 0; }
+  8% { opacity: 1; }
+  50% { transform: translate(var(--drift, 10px), calc(var(--fall) * 0.5)); }
+  90% { opacity: 1; }
+  100% { transform: translate(0, var(--fall)); opacity: 0; }
+}
+.rocket { position: absolute; width: 3px; height: 8px; background: #ffe6a0; box-shadow: 0 4px 6px #ffb347; pointer-events: none; }
+.spark {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: var(--c);
+  box-shadow: 0 0 4px var(--c);
+  pointer-events: none;
+  animation: spark 1.1s ease-out forwards;
+}
+@keyframes spark {
+  from { transform: translate(0, 0); opacity: 1; }
+  to { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+}
+
+/* ---------- Agent 47's mission rating ---------- */
+.rating {
+  position: absolute;
+  transform: translateX(-50%);
+  padding: 6px 12px 7px;
+  background: rgba(10, 10, 12, 0.94);
+  border-left: 3px solid #c8102e;
+  color: #f4f4f4;
+  font: 600 11px "Segoe UI", sans-serif;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: ratingin 0.35s ease-out;
+}
+.rating .r-head { display: block; font-size: 9px; letter-spacing: 0.12em; color: #a9a9b3; }
+.rating .r-title { display: block; font-size: 15px; letter-spacing: 0.04em; margin-top: 1px; }
+.rating .r-stars { display: block; color: #c8102e; font-size: 13px; letter-spacing: 2px; }
+.rating .r-note { display: block; font-weight: 400; color: #c9c9d1; font-size: 10px; }
+.rating.leaving { opacity: 0; transition: opacity 0.5s; }
+@keyframes ratingin { from { opacity: 0; transform: translate(-50%, 8px); } }
+
+/* ---------- rage quit: the table ---------- */
+.table { position: absolute; width: 54px; height: 30px; transform-origin: 50% 60%; pointer-events: none; }
+.table svg rect { fill: #9a6a3c; }
+.table svg .tb-top { fill: #b57e48; }
+
+/* ---------- more sessions, more Claudes ---------- */
+.buddy {
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  width: 96px;
+  cursor: pointer;
+  transform: scale(0.72);
+  transform-origin: 50% 100%;
+}
+.buddy .bubble { font-size: 14px; }
+.buddy.arrive .sprite { animation: buddyin 0.45s ease-out; }
+@keyframes buddyin { from { transform: translateY(-40px); opacity: 0; } }
+.buddy.done .bob { animation: bounce 1.2s ease-in-out infinite; }
+#claude.jumped .bob { animation: hop 0.5s ease-out 1; }

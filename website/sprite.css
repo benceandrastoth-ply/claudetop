@@ -182,6 +182,13 @@
 
 /* Agent 47 */
 .claude.hat-agent47 .suit { display: inline; }
+.claude .disguise { display: none; }
+.claude.disguise-chef .disguise.chef { display: inline; }
+.claude.disguise-chef .suit { display: none; }
+.claude svg .chef .coat, .claude svg .chef .toque { fill: #f6f6f2; }
+.claude svg .chef .toque-band { fill: #e0e0da; }
+.claude svg .chef .coat-btn { fill: #1b1b1f; }
+.claude.disguise-chef svg .arm { fill: #f6f6f2; }
 .claude svg .suit .jacket { fill: #1b1b1f; }
 .claude svg .suit .shirt { fill: #f4f4f4; }
 .claude svg .suit .tie { fill: #c8102e; }

@@ -130,6 +130,12 @@ function setState(next) {
     setTimeout(() => el.classList.remove('celebrate'), 1600);
   }
   if (state === 'working') walker.pauseUntil = 0;
+  if (state === 'done' && prev !== 'done') {
+    flamingo = isAgent() && Math.random() < 1 / 12;
+    const job = latestSession();
+    if (isAgent() && entered && !config.preview && job && typeof job.prompts === 'number') showRating(job.prompts);
+  }
+  if (state !== 'done') flamingo = false;
   if (state === 'recharged' && prev !== 'recharged') {
     el.classList.add('powerup');
     walker.pauseUntil = performance.now() + 1700;
@@ -154,6 +160,10 @@ const isAgent = () => config.hat === 'agent47';
 
 function renderBubble() {
   let html = (isAgent() ? BUBBLES_47 : BUBBLES)[state] || '';
+  if (state === 'working' && taskMinutes >= 10) {
+    html = sleepbag && !isAgent() ? `Still working… 😴 ${taskMinutes} min` : `${html} ${taskMinutes} min`;
+  }
+  if (gameLine) html = escapeHtml(gameLine);
   if (panicking) {
     const lines = isAgent() ? PANIC_LINES_47 : PANIC_LINES;
     html = escapeHtml(lines[panicLine % lines.length]);
@@ -457,7 +467,7 @@ function updateTv() {
   if (tvBlockedFor && (!media.playing || mediaKey() !== tvBlockedFor)) tvBlockedFor = null;
   const want =
     config.tv !== false && videoPlaying() && !tvBlockedFor && ['resting', 'working'].includes(state) &&
-    !panicking && !scene && !puppet && !dancing;
+    !panicking && !scene && !puppet && !dancing && !gaming;
   if (want && !tv) startTv();
   else if (!want && tv) stopTv();
 }
@@ -540,7 +550,7 @@ async function kickTv() {
 
 function updateDance() {
   const want =
-    musicPlaying() && !panicking && !scene && !puppet && !crying && ['resting', 'done', 'working', 'recharged'].includes(state);
+    musicPlaying() && !panicking && !scene && !puppet && !crying && !gaming && ['resting', 'done', 'working', 'recharged'].includes(state);
   if (want === dancing) return;
   dancing = want;
   el.classList.toggle('dancing', want);
@@ -1202,6 +1212,468 @@ async function lockIn(job) {
   window.claudetop.lockInDone();
 }
 
+// ---------- which session is Claude about? ----------
+// The one that matters most: needs you, then working, then the latest.
+function leadSession(now = Date.now()) {
+  const fresh = (s, ms) => now - s.at < ms;
+  return (
+    sessions.find((s) => s.state === 'waiting' && fresh(s, WAITING_STALE_MS)) ||
+    [...sessions].filter((s) => s.state === 'working' && fresh(s, WORKING_STALE_MS)).sort((a, b) => b.at - a.at)[0] ||
+    latestSession()
+  );
+}
+
+// ---------- what it's doing: props, long tasks, disguises ----------
+// While working, Claude holds something that matches the tool Claude Code is using. A long task
+// gets a coffee after 10 minutes and a sleeping bag after 30.
+const TOOL_PROPS = [
+  [/^(Grep|Glob|LS|WebSearch|WebFetch|ToolSearch)$/, 'magnifier'],
+  [/^(Edit|Write|MultiEdit|NotebookEdit)$/, 'pencil'],
+  [/^(Bash|BashOutput|PowerShell|KillShell|KillBash)$/, 'terminal'],
+  [/^Read$/, 'book'],
+];
+const PROPS = ['magnifier', 'pencil', 'terminal', 'book', 'coffee'];
+const COFFEE_MS = 10 * 60 * 1000;
+const SLEEPBAG_MS = 30 * 60 * 1000;
+let held = null;
+let sleepbag = false;
+let taskMinutes = 0;
+let disguise = null; // Agent 47: 'chef' | 'mechanic' | 'flamingo'
+let flamingo = false; // rolled when a job finishes: a rare surprise
+let seasonHat = null;
+const debug = {}; // test overrides: { prop, minutes, disguise }
+
+function updateDoing(now = Date.now()) {
+  const lead = leadSession(now);
+  const busy = puppet || panicking || scene || crying || dancing || tv || gaming;
+  let prop = null;
+  let minutes = 0;
+  if (state === 'working' && lead && lead.state === 'working' && !busy) {
+    minutes = Math.floor((now - (lead.taskStart || lead.at)) / 60000);
+    const hit = TOOL_PROPS.find(([re]) => re.test(lead.tool || ''));
+    prop = hit ? hit[1] : null;
+  }
+  if (debug.minutes != null && state === 'working' && !busy) minutes = debug.minutes;
+  if (debug.prop !== undefined && state === 'working' && !busy) prop = debug.prop;
+  const bag = minutes * 60000 >= SLEEPBAG_MS;
+  if (minutes * 60000 >= COFFEE_MS && !bag) prop = 'coffee';
+  if (bag) prop = null;
+  if (prop !== held) {
+    held = prop;
+    for (const p of PROPS) el.classList.toggle(`tool-${p}`, p === held);
+    el.classList.toggle('holding', !!held);
+  }
+  if (bag !== sleepbag) {
+    sleepbag = bag;
+    el.classList.toggle('sleepbag', bag);
+    walker.target = null;
+  }
+  if (minutes !== taskMinutes) {
+    taskMinutes = minutes;
+    renderBubble();
+  }
+  updateDisguise(lead);
+}
+
+function updateDisguise(lead) {
+  let d = null;
+  if (isAgent() && !puppet) {
+    if (state === 'done' && flamingo) d = 'flamingo';
+    else if (lead && lead.testsFailed && ['working', 'waiting', 'done'].includes(state)) d = 'mechanic';
+    else if (state === 'working' && held === 'pencil') d = 'chef';
+  }
+  if (debug.disguise !== undefined) d = isAgent() ? debug.disguise : null;
+  if (d === disguise) return;
+  if (entered) poof(headPoint().x, headPoint().y + 6); // a quick change, behind a puff of smoke
+  disguise = d;
+  for (const k of ['chef', 'mechanic', 'flamingo']) el.classList.toggle(`disguise-${k}`, k === d);
+  updateHatClasses();
+}
+
+// Bubbles sit higher over tall hats.
+function updateHatClasses() {
+  const own = ['hard', 'propeller', 'miner'].includes(config.hat);
+  el.classList.toggle('hat-on', own || !!seasonHat || disguise === 'mechanic');
+  el.classList.toggle('tall-hat', disguise === 'chef' || disguise === 'flamingo' || seasonHat === 'party');
+}
+
+// ---------- Agent 47's mission rating ----------
+// Every finished job gets rated. Permission prompts are witnesses.
+function showRating(prompts) {
+  const stars = Math.max(1, 5 - (prompts >= 3 ? prompts - 1 : prompts));
+  const silent = prompts === 0;
+  const r = document.createElement('div');
+  r.className = 'rating';
+  r.innerHTML =
+    '<span class="r-head">MISSION RATING</span>' +
+    `<span class="r-title">${silent ? 'SILENT ASSASSIN' : stars >= 3 ? 'PROFESSIONAL' : stars === 2 ? 'SLOPPY' : 'MASS PANIC'}</span>` +
+    `<span class="r-stars">${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}</span>` +
+    `<span class="r-note">${silent ? 'No witnesses' : `${prompts} witness${prompts === 1 ? '' : 'es'}`}</span>`;
+  const head = headPoint();
+  r.style.left = `${Math.max(90, Math.min(window.innerWidth - 90, head.x))}px`;
+  r.style.top = `${Math.max(4, head.y - 120)}px`;
+  fx.appendChild(r);
+  setTimeout(() => r.classList.add('leaving'), 4500);
+  setTimeout(() => r.remove(), 5100);
+}
+
+// ---------- rage quit ----------
+// Three failed tool calls in a row is a lot for anyone.
+const TABLE_SVG = `<svg viewBox="0 0 18 10" width="54" height="30" shape-rendering="crispEdges">
+  <rect class="tb-top" x="0" y="0" width="18" height="2" />
+  <rect x="1.5" y="2" width="1.5" height="8" />
+  <rect x="15" y="2" width="1.5" height="8" />
+  <rect x="3" y="3" width="12" height="0.8" />
+</svg>`;
+const rageSeen = new Map(); // session id -> rageAt already acted on
+
+function checkRage() {
+  for (const s of sessions) {
+    if (!s.rageAt || rageSeen.get(s.id) === s.rageAt) continue;
+    rageSeen.set(s.id, s.rageAt);
+    if (entered && Date.now() - s.rageAt < 60 * 1000) flipTable();
+  }
+}
+
+async function flipTable() {
+  if (puppet || panicking || crying || scene) return;
+  puppet = true;
+  walker.target = null;
+  el.classList.remove('walking');
+  updateDance();
+  updateDoing();
+  if (isAgent()) {
+    // 47 doesn't flip tables.
+    lockInMessage = 'Complications.';
+    renderBubble();
+    await wait(1100);
+    el.classList.add('tie-adjust');
+    lockInMessage = 'Nothing I can’t handle.';
+    renderBubble();
+    await wait(1200);
+    el.classList.remove('tie-adjust');
+  } else {
+    const dir = walker.dir;
+    const t = document.createElement('div');
+    t.className = 'table';
+    t.innerHTML = TABLE_SVG;
+    fx.appendChild(t);
+    const x0 = walker.x + WIDTH / 2 + dir * 50;
+    const y0 = floorY(x0) - 30;
+    const place = (x, y, rot) => {
+      t.style.left = `${x - 27}px`;
+      t.style.top = `${y}px`;
+      t.style.transform = `rotate(${rot}deg)`;
+    };
+    place(x0, y0, 0);
+    poof(x0, y0 + 15);
+    lockInMessage = 'ARGH!!';
+    el.classList.add('react-angry');
+    renderBubble();
+    await wait(700);
+    // Flip.
+    lockInMessage = '(╯°□°)╯︵ ┻━┻';
+    el.classList.add('throwing');
+    renderBubble();
+    const x1 = x0 + dir * 130;
+    const y1 = floorY(x1) - 30;
+    await tween(650, (p) => place(x0 + (x1 - x0) * p, y0 + (y1 - y0) * p - 90 * Math.sin(Math.PI * p), dir * 180 * p));
+    burst(x1, y1 + 20);
+    el.classList.remove('throwing');
+    await wait(1300);
+    // ...and calmly put it back.
+    el.classList.remove('react-angry');
+    lockInMessage = '…';
+    renderBubble();
+    await wait(700);
+    await walkTo(x1 - WIDTH / 2 - dir * 60, 120);
+    walker.dir = dir;
+    lockInMessage = '┬─┬ノ( º _ ºノ)';
+    renderBubble();
+    el.classList.add('pickup');
+    await tween(500, (p) => place(x1, y1 - 14 * Math.sin(Math.PI * p), dir * 180 * (1 - p)));
+    el.classList.remove('pickup');
+    await wait(1100);
+    t.style.transition = 'opacity 0.4s';
+    t.style.opacity = '0';
+    setTimeout(() => t.remove(), 450);
+  }
+  lockInMessage = null;
+  puppet = false;
+  renderBubble();
+}
+
+// ---------- seasons ----------
+// Snow all winter; a pumpkin for Halloween week, a Santa hat at Christmas, a party hat and
+// fireworks at New Year; and for Hungary's national days a cockade (fireworks on 20 August).
+const seasonDate = () => (debug.date ? new Date(debug.date) : new Date());
+
+function seasonFor(d) {
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  const h = d.getHours();
+  const s = { hat: null, snow: m === 12 || m <= 2, fireworks: false, cockade: false };
+  if (m === 10 && day >= 24) s.hat = 'pumpkin';
+  if (m === 12 && day >= 20 && day <= 26) s.hat = 'santa';
+  if ((m === 12 && day === 31) || (m === 1 && day === 1)) {
+    s.hat = 'party';
+    s.fireworks = (m === 12 && h >= 18) || (m === 1 && h < 3);
+  }
+  if ((m === 3 && day === 15) || (m === 8 && day === 20) || (m === 10 && day === 23)) s.cockade = true;
+  if (m === 8 && day === 20 && h >= 20) s.fireworks = true;
+  return s;
+}
+
+let season = { hat: null, snow: false, fireworks: false, cockade: false };
+let snowTimer = null;
+let fireworksTimer = null;
+
+function applySeason() {
+  season = config.seasonal === false ? { hat: null, snow: false, fireworks: false, cockade: false } : seasonFor(seasonDate());
+  seasonHat = config.hat === 'none' ? season.hat : null; // your own hat wins
+  for (const k of ['pumpkin', 'santa', 'party']) el.classList.toggle(`season-${k}`, k === seasonHat);
+  el.classList.toggle('wear-cockade', season.cockade);
+  updateHatClasses();
+  if (season.snow && !snowTimer) snowTimer = setInterval(snowflake, 380);
+  if (!season.snow && snowTimer) {
+    clearInterval(snowTimer);
+    snowTimer = null;
+  }
+  if (season.fireworks && !fireworksTimer) scheduleFirework();
+}
+
+function snowflake() {
+  if (document.hidden) return;
+  const { min, max } = walkRange();
+  const f = document.createElement('i');
+  f.className = 'flake';
+  const x = min + Math.random() * (max + WIDTH - min);
+  const fall = floorY(x) + 6;
+  f.style.left = `${x}px`;
+  f.style.setProperty('--fall', `${fall}px`);
+  f.style.setProperty('--drift', `${(Math.random() - 0.5) * 40}px`);
+  const t = 6 + Math.random() * 4;
+  f.style.setProperty('--t', `${t}s`);
+  const size = 2 + Math.random() * 3;
+  f.style.width = f.style.height = `${size}px`;
+  fx.appendChild(f);
+  setTimeout(() => f.remove(), t * 1000 + 100);
+}
+
+function scheduleFirework() {
+  fireworksTimer = setTimeout(() => {
+    fireworksTimer = null;
+    if (!season.fireworks) return;
+    if (!document.hidden) firework();
+    scheduleFirework();
+  }, 1400 + Math.random() * 2200);
+}
+
+async function firework() {
+  const { min, max } = walkRange();
+  const x = min + Math.random() * (max + WIDTH - min);
+  const y0 = floorY(x);
+  const y1 = Math.max(20, y0 - 110 - Math.random() * 80);
+  const r = document.createElement('div');
+  r.className = 'rocket';
+  fx.appendChild(r);
+  await tween(700, (p) => {
+    r.style.left = `${x}px`;
+    r.style.top = `${y0 + (y1 - y0) * easeOut(p)}px`;
+  });
+  r.remove();
+  const colors = [['#ff5fa2', '#ffd23f'], ['#36d6ff', '#7cf06b'], ['#b07cff', '#ff8a3d'], ['#d32f2f', '#fbfbfb', '#2f8a3c']];
+  const set = pick(colors);
+  for (let i = 0; i < 16; i++) {
+    const s = document.createElement('i');
+    s.className = 'spark';
+    const a = (Math.PI * 2 * i) / 16;
+    const d = 30 + Math.random() * 25;
+    s.style.left = `${x}px`;
+    s.style.top = `${y1}px`;
+    s.style.setProperty('--c', set[i % set.length]);
+    s.style.setProperty('--dx', `${Math.cos(a) * d}px`);
+    s.style.setProperty('--dy', `${Math.sin(a) * d + 12}px`);
+    fx.appendChild(s);
+    setTimeout(() => s.remove(), 1150);
+  }
+}
+
+// ---------- game mode ----------
+// Main reports a fullscreen window. On Claude's screen: hide. On another screen: grab a
+// controller and play along (not for a fullscreen browser: that's a video, the TV's job).
+let game = { active: false };
+let gaming = false;
+let hiddenForGame = false;
+let gameLine = null;
+let nextGameLine = 0;
+const GAME_LINES = ['gg', 'nice!', 'one more round', 'clutch!!', 'lag!', 'let me try', 'ez'];
+const GAME_LINES_HITMAN = ['Silent Assassin run?', 'Use the coin.', 'Suit only. Respect.', 'Not the duck…'];
+const GAME_LINES_47 = ['Amateur.', 'Hmph.', 'I’d have used the coin.', 'Sloppy.'];
+
+function updateGame(now = performance.now()) {
+  let hide = false;
+  let play = false;
+  if (game.active && game.bounds && layout) {
+    const left = game.bounds.x - layout.winX;
+    const right = left + game.bounds.width;
+    const cx = walker.x + WIDTH / 2;
+    hide = cx >= left && cx < right;
+    play =
+      !hide && !game.browser && ['resting', 'working', 'done', 'recharged'].includes(state) &&
+      !panicking && !scene && !puppet && !crying;
+  }
+  if (hide !== hiddenForGame) {
+    hiddenForGame = hide;
+    window.claudetop.setHidden(hide);
+  }
+  if (play !== gaming) {
+    gaming = play;
+    el.classList.toggle('gaming', play);
+    walker.target = null;
+    nextGameLine = now + 4000;
+    if (!play) gameLine = null;
+    updateDance();
+    updateTv();
+    updateDoing();
+    renderBubble();
+    renderInfo();
+  }
+  if (gaming && now > nextGameLine) {
+    const hitman = /hitman/i.test(`${game.name} ${game.title}`);
+    gameLine = pick(isAgent() ? GAME_LINES_47 : hitman && Math.random() < 0.6 ? GAME_LINES_HITMAN : GAME_LINES);
+    nextGameLine = now + 9000 + Math.random() * 9000;
+    renderBubble();
+    setTimeout(() => {
+      gameLine = null;
+      renderBubble();
+    }, 2400);
+  }
+}
+
+window.claudetop.onGame((g) => {
+  game = g;
+  updateGame();
+});
+
+// ---------- more sessions, more Claudes ----------
+// Every other active session gets a smaller Claude of its own colour that keeps to itself.
+// Click any Claude to bring up its session.
+const BUDDY_COLORS = ['#5b8def', '#4fa38f', '#9a7fd1', '#e0a43a'];
+const BUDDY_ACTIVE_MS = 30 * 60 * 1000;
+const MAX_BUDDIES = 4;
+const buddies = new Map(); // session id -> { el, bubble, x, target, dir, pauseUntil, color, s }
+const sessionColors = new Map(); // session id -> colour, kept while the session lives
+
+function colorFor(id) {
+  if (!sessionColors.has(id)) {
+    const used = new Set(sessionColors.values());
+    sessionColors.set(id, BUDDY_COLORS.find((c) => !used.has(c)) || BUDDY_COLORS[sessionColors.size % BUDDY_COLORS.length]);
+  }
+  return sessionColors.get(id);
+}
+
+function buddyState(s, now) {
+  if (s.state === 'working' && now - s.at < WORKING_STALE_MS) return 'working';
+  if (s.state === 'waiting' && now - s.at < WAITING_STALE_MS) return 'waiting';
+  if (s.state === 'nocredit') return 'nocredit';
+  if ((s.state === 'done' || s.state === 'error') && now - s.at < 90 * 1000) return 'done';
+  return 'resting';
+}
+
+const projectOf = (s) => (s.cwd ? s.cwd.split(/[\\/]/).filter(Boolean).pop() : 'session');
+
+function updateBuddies(now = Date.now()) {
+  const lead = leadSession(now);
+  const wanted = sessions
+    .filter((s) => s !== lead && (['working', 'waiting'].includes(s.state) || now - s.at < BUDDY_ACTIVE_MS))
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .slice(0, MAX_BUDDIES);
+  const ids = new Set(wanted.map((s) => s.id));
+  for (const [id, b] of buddies) {
+    if (ids.has(id)) continue;
+    poof(b.x + WIDTH / 2, floorY(b.x + WIDTH / 2) - 25);
+    b.el.remove();
+    buddies.delete(id);
+  }
+  for (const s of wanted) {
+    let b = buddies.get(s.id);
+    if (!b) b = makeBuddy(s);
+    b.s = s;
+    const st = buddyState(s, now);
+    for (const k of ['working', 'waiting', 'done', 'nocredit', 'resting']) b.el.classList.toggle(k, k === st);
+    const text = b.hover ? `${projectOf(s)}: ${LABELS[s.state] || s.state}` : { waiting: 'Needs you!', done: 'Done!' }[st] || '';
+    if (b.bubble.textContent !== text) b.bubble.textContent = text;
+    b.bubble.classList.toggle('show', !!text);
+  }
+  for (const id of sessionColors.keys()) if (!sessions.some((s) => s.id === id)) sessionColors.delete(id);
+}
+
+function makeBuddy(s) {
+  const color = colorFor(s.id);
+  const node = document.createElement('div');
+  node.className = 'buddy arrive';
+  node.innerHTML = `<div class="bubble"></div><div class="zzz"><span>z</span><span>z</span><span>Z</span></div>${sprite.outerHTML.replace(' id="sprite"', '')}<div class="shadow"></div>`;
+  node.querySelector('.sprite').classList.remove('flip', 'blink');
+  node.style.setProperty('--clay', color);
+  document.body.appendChild(node);
+  const { min, max } = walkRange();
+  const b = { el: node, bubble: node.querySelector('.bubble'), x: min + Math.random() * (max - min), target: null, dir: 1, pauseUntil: 0, color, s, hover: false };
+  setTimeout(() => node.classList.remove('arrive'), 500);
+  node.addEventListener('mouseenter', () => {
+    b.hover = true;
+    window.claudetop.setIgnoreMouse(false);
+    updateBuddies();
+  });
+  node.addEventListener('mouseleave', () => {
+    b.hover = false;
+    if (!dragging) window.claudetop.setIgnoreMouse(true);
+    updateBuddies();
+  });
+  node.addEventListener('click', () => window.claudetop.jumpTo(b.s.chain || []));
+  node.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    window.claudetop.showMenu();
+  });
+  buddies.set(s.id, b);
+  return b;
+}
+
+function moveBuddies(t, dt) {
+  const { min, max } = walkRange();
+  for (const b of buddies.values()) {
+    b.x = Math.max(min, Math.min(max, b.x));
+    let moving = false;
+    if (b.el.classList.contains('working') && config.mode === 'walk' && t >= b.pauseUntil) {
+      if (b.target === null) b.target = min + Math.random() * (max - min);
+      const d = b.target - b.x;
+      if (Math.abs(d) < 2) {
+        b.target = null;
+        b.pauseUntil = t + 600 + Math.random() * 2000;
+      } else {
+        b.dir = Math.sign(d);
+        b.x += b.dir * Math.min(Math.abs(d), 55 * dt);
+        moving = true;
+      }
+    }
+    b.el.classList.toggle('walking', moving);
+    b.el.querySelector('.sprite').classList.toggle('flip', b.dir < 0);
+    b.el.style.left = `${Math.round(b.x)}px`;
+    b.el.style.bottom = `${4 + groundAt(b.x)}px`;
+  }
+}
+
+// ---------- click: jump to Claude Code ----------
+function jumpToLead() {
+  const lead = leadSession();
+  if (!lead) return;
+  window.claudetop.jumpTo(lead.chain || []);
+  el.classList.remove('jumped');
+  void el.offsetWidth;
+  el.classList.add('jumped');
+  setTimeout(() => el.classList.remove('jumped'), 550);
+}
+
 // ---------- hover info ----------
 const LABELS = {
   working: 'working',
@@ -1236,7 +1708,9 @@ function renderInfo() {
       const project = s.cwd ? s.cwd.split(/[\\/]/).filter(Boolean).pop() : 'session';
       const tool = s.state === 'working' && s.tool ? ` · ${escapeHtml(s.tool)}` : '';
       const reset = s.state === 'nocredit' && s.resetAt > now ? `, back at ${clock(s.resetAt)}` : '';
-      return `${escapeHtml(project)}: ${LABELS[s.state] || s.state}${reset}${tool} <span class="muted">${ago(now - s.at)}</span>`;
+      const b = buddies.get(s.id);
+      const dot = b ? `<span style="color:${b.color}">●</span> ` : '';
+      return `${dot}${escapeHtml(project)}: ${LABELS[s.state] || s.state}${reset}${tool} <span class="muted">${ago(now - s.at)}</span>`;
     });
   if (!rows.length) rows.push('<span class="muted">No Claude Code sessions yet</span>');
   if (dancing) {
@@ -1244,6 +1718,8 @@ function renderInfo() {
     rows.push(`♪ ${escapeHtml(song || 'Vibing')}`);
   }
   if (tv) rows.push(`📺 ${escapeHtml(media.title || 'Watching TV')}`);
+  if (gaming) rows.push(`🎮 Playing along: ${escapeHtml(game.title || game.name || 'a game')}`);
+  if (sessions.length) rows.push('<span class="muted">Click to open Claude Code</span>');
   rows.push(`<span class="muted">${config.mode === 'walk' ? 'Walking around' : 'Staying put'} · right-click for options</span>`);
   info.innerHTML = [head, ...rows].join('<br>');
 }
@@ -1310,8 +1786,9 @@ function speedFor() {
   if (scene === 'relief') return 0;
   if (scene === 'returning' || scene === 'homing') return 140;
   if (panicking) return isAgent() ? 160 : 290; // even in "stay in place" mode: this is an emergency
-  if (dancing || tv || crying) return 0;
+  if (dancing || tv || crying || gaming || sleepbag) return 0;
   if (config.mode !== 'walk') return 0;
+  if (state === 'working' && held === 'coffee') return isAgent() ? 32 : 45; // no spilling
   if (state === 'working') return isAgent() ? 47 : 70;
   if (state === 'done' || state === 'recharged') return 30;
   return 0; // waiting, out of credits, resting: stand still
@@ -1410,15 +1887,21 @@ function tick(t) {
   const below = burrowing ? Math.max(0, 4 + ground - bottom) : 0;
   el.style.clipPath = below > 0 ? `inset(-400px -400px ${below}px -400px)` : '';
   el.style.transform = walker.rot ? `rotate(${walker.rot}deg)` : '';
+  moveBuddies(t, dt);
   // Linux can't forward mouse movement through the window, so tell main where Claude is.
   if (IS_LINUX && t - lastRectSent > 80) {
     lastRectSent = t;
     const r = el.getBoundingClientRect();
-    window.claudetop.claudeRect({ x: window.screenX + r.left, y: window.screenY + r.top, w: r.width, h: r.height });
+    const hits = [r, ...[...buddies.values()].map((b) => b.el.getBoundingClientRect())];
+    window.claudetop.claudeRect(hits.map((h) => ({ x: window.screenX + h.left, y: window.screenY + h.top, w: h.width, h: h.height })));
     // Everything visible: Claude plus room above for the hat, bubble and hover info, and every
     // effect (flying hats, the TV, holes, notes...).
     const pad = 18;
     const rects = [{ x: r.left - 120 - pad, y: r.top - 150, w: r.width + 240 + 2 * pad, h: r.height + 150 + pad }];
+    for (const b of buddies.values()) {
+      const h = b.el.getBoundingClientRect();
+      rects.push({ x: h.left - 60, y: h.top - 60, w: h.width + 120, h: h.height + 60 + pad });
+    }
     for (const node of fx.children) {
       const b = node.getBoundingClientRect();
       if (b.width && b.height) rects.push({ x: b.left - pad, y: b.top - pad, w: b.width + 2 * pad, h: b.height + 2 * pad });
@@ -1453,21 +1936,29 @@ el.addEventListener('mouseleave', () => {
 
 el.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
-  dragging = { offset: e.clientX - walker.x };
+  dragging = { offset: e.clientX - walker.x, startX: e.clientX, startY: e.clientY, at: performance.now(), moved: false };
   walker.target = null;
   el.classList.add('dragging');
 });
 
 window.addEventListener('mousemove', (e) => {
   if (!dragging) return;
+  if (!dragging.moved && Math.hypot(e.clientX - dragging.startX, e.clientY - dragging.startY) < 4) return;
+  dragging.moved = true;
   const { min, max } = walkRange();
   walker.x = Math.max(min, Math.min(max, e.clientX - dragging.offset));
 });
 
 window.addEventListener('mouseup', () => {
   if (!dragging) return;
+  const click = !dragging.moved && performance.now() - dragging.at < 500;
   dragging = null;
   el.classList.remove('dragging');
+  if (click) {
+    jumpToLead();
+    if (!hovering) window.claudetop.setIgnoreMouse(true);
+    return;
+  }
   if (config.mode === 'fixed' && !spanning) {
     config.fixedX = walker.x - home().left;
     window.claudetop.setFixedX(config.fixedX);
@@ -1496,7 +1987,7 @@ window.claudetop.onConfig((cfg) => {
     config.fixedX = walker.x - home().left;
     window.claudetop.setFixedX(config.fixedX);
   }
-  el.classList.toggle('hat-on', ['hard', 'propeller', 'miner'].includes(config.hat));
+  updateHatClasses();
   el.classList.toggle('hat-hard', config.hat === 'hard');
   el.classList.toggle('hat-propeller', config.hat === 'propeller');
   el.classList.toggle('hat-miner', config.hat === 'miner');
@@ -1513,6 +2004,8 @@ window.claudetop.onConfig((cfg) => {
   updatePanic();
   updateDance();
   updateTv();
+  applySeason();
+  updateDoing();
   renderInfo();
   maybeEnter();
 });
@@ -1565,6 +2058,9 @@ async function maybeEnter() {
 window.claudetop.onSessions((list) => {
   sessions = list;
   setState(computeState(Date.now()));
+  checkRage();
+  updateBuddies();
+  updateDoing();
   if (hovering) renderInfo();
 });
 
@@ -1581,8 +2077,12 @@ setInterval(() => {
   updatePanic(); // you may have just opened Claude Code
   updateDance();
   updateTv();
+  updateDoing();
+  updateGame();
+  updateBuddies();
   if (hovering) renderInfo();
 }, 500);
+setInterval(applySeason, 60 * 1000);
 
 el.classList.add(state);
 scheduleBlink();

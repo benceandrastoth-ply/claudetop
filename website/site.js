@@ -111,6 +111,16 @@ const SPRITE = `
         <rect class="brow47" x="4.4" y="1.4" width="2.2" height="0.5" />
         <rect class="brow47" x="9.4" y="1.4" width="2.2" height="0.5" />
       </g>
+      <g class="disguise chef">
+        <rect class="coat" x="2" y="4.4" width="12" height="2.61" />
+        <rect class="coat-btn" x="6.4" y="4.8" width="0.5" height="0.5" />
+        <rect class="coat-btn" x="9.1" y="4.8" width="0.5" height="0.5" />
+        <rect class="coat-btn" x="6.4" y="6" width="0.5" height="0.5" />
+        <rect class="coat-btn" x="9.1" y="6" width="0.5" height="0.5" />
+        <rect class="toque" x="4" y="-5.6" width="8" height="2.2" />
+        <rect class="toque" x="5" y="-3.6" width="6" height="2.8" />
+        <rect class="toque-band" x="4.6" y="-1" width="6.8" height="1" />
+      </g>
       <rect class="arm arm-l" x="0" y="3" width="2" height="2" />
       <rect class="arm arm-r" x="14" y="3" width="2" height="2" />
       <g class="eyes-open"><rect x="5" y="2" width="1" height="2" /><rect x="10" y="2" width="1" height="2" /></g>
@@ -193,10 +203,17 @@ const POSES = {
   working: 'hat-agent47 working',
   sneak: 'hat-agent47 working walking',
   resting: 'hat-agent47 resting',
+  chef: 'hat-agent47 working disguise-chef',
 };
 document.querySelectorAll('.portrait').forEach((p) => {
   const pose = p.dataset.pose;
-  if (pose === 'duck') {
+  if (pose === 'rating') {
+    p.insertAdjacentHTML(
+      'beforeend',
+      '<div class="rating-card"><span class="r-head">Mission rating</span><span class="r-title">Silent Assassin</span>' +
+        '<span class="r-stars" aria-label="5 out of 5">★★★★★</span><span class="r-note">No witnesses</span></div>'
+    );
+  } else if (pose === 'duck') {
     const duck = document.createElement('div');
     duck.className = 'duck';
     duck.innerHTML = DUCK_SVG;

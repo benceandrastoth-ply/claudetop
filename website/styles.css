@@ -250,8 +250,8 @@ body.agent-mode {
 .agent .intro { color: var(--paper); opacity: 0.85; }
 .dossier {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 32px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 48px 32px;
   margin: 56px 0 0;
 }
 .dossier figure { margin: 0; border-top: 3px solid #c8102e; padding-top: 16px; }
@@ -260,6 +260,23 @@ body.agent-mode {
 .portrait { position: relative; height: 210px; margin-bottom: 18px; }
 .portrait .claude { left: 50%; bottom: 14px; transform: translateX(-50%) scale(2.3); transform-origin: 50% 100%; }
 .portrait .claude .bubble { display: none; }
+.portrait[data-pose="chef"] .claude { transform: translateX(-50%) scale(1.85); } /* room for the toque */
+.rating-card {
+  position: absolute;
+  left: 50%;
+  bottom: 40px;
+  transform: translateX(-50%);
+  padding: 12px 22px 14px;
+  background: #0b0b0d;
+  border-left: 4px solid #c8102e;
+  text-align: center;
+  white-space: nowrap;
+}
+.rating-card span { display: block; }
+.rating-card .r-head { color: #a9a9b3; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.rating-card .r-title { font: 500 var(--step-1) var(--pixel); color: var(--paper); text-transform: uppercase; }
+.rating-card .r-stars { color: #c8102e; font-size: 1.3rem; letter-spacing: 3px; }
+.rating-card .r-note { color: #c9c9d1; font-size: 0.85rem; }
 .portrait .duck { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%) scale(3); transform-origin: 50% 100%; }
 @media (max-width: 960px) {
   .dossier { grid-template-columns: repeat(2, 1fr); gap: 40px 24px; }

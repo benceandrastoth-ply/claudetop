@@ -16,6 +16,19 @@ public static class Fg {
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int max);
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out Rect rect);
+  [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr hWnd);
+  [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr hWnd, int cmd);
+  [DllImport("user32.dll")] static extern bool IsIconic(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern bool IsZoomed(IntPtr hWnd);
+  [DllImport("user32.dll")] static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+  // Bring a window to the front. Windows only lets the foreground app do that, unless a key was
+  // just pressed: tapping Alt first is the usual way round it.
+  public static void Bring(IntPtr hWnd) {
+    if (IsIconic(hWnd)) ShowWindow(hWnd, 9); // SW_RESTORE
+    keybd_event(0x12, 0, 0, UIntPtr.Zero);
+    keybd_event(0x12, 0, 2, UIntPtr.Zero);
+    SetForegroundWindow(hWnd);
+  }
 }
 // Where's the active tab? Browsers expose their tab strip through MSAA: walk the browser's
 // own UI (not page content) for the selected page tab. Returns "l,t,r,b" or "".
@@ -102,7 +115,12 @@ while ($true) {
     $names[$fgPid] = ''
     try { $names[$fgPid] = (Get-Process -Id $fgPid -ErrorAction Stop).ProcessName } catch {}
   }
-  $line = "$fgPid`t$($names[$fgPid])`t$title"
+  $fr = New-Object Fg+Rect
+  [void][Fg]::GetWindowRect($hwnd, [ref]$fr)
+  # The rect is left out for maximized windows: with an auto-hiding taskbar they cover the whole
+  # monitor too, but they aren't fullscreen games.
+  $rectText = if ([Fg]::IsZoomed($hwnd)) { '' } else { "$($fr.Left),$($fr.Top),$($fr.Right),$($fr.Bottom)" }
+  $line = "$fgPid`t$($names[$fgPid])`t$title`t$rectText"
   if ($line -ne $last) {
     [Console]::Out.WriteLine($line)
     [Console]::Out.Flush()
@@ -126,6 +144,22 @@ while ($true) {
     if ($cmd -match '^close (\d+)') {
       if ([Fg]::GetForegroundWindow() -eq [IntPtr][long]$Matches[1]) { $shell.SendKeys('^w') }
       $cooldownUntil = [DateTime]::Now.AddSeconds(1.5)
+    }
+    # "focus <pid,pid,...>": bring up the first of these processes that has a window (the
+    # session's terminal or editor). Failing that, a terminal showing a Claude Code tab.
+    if ($cmd -match '^focus ([\d,]*)') {
+      $target = [IntPtr]::Zero
+      foreach ($p in ($Matches[1] -split ',' | Where-Object { $_ })) {
+        try { $h = (Get-Process -Id ([int]$p) -ErrorAction Stop).MainWindowHandle } catch { continue }
+        if ($h -ne [IntPtr]::Zero) { $target = $h; break }
+      }
+      if ($target -eq [IntPtr]::Zero) {
+        $hit = Get-Process -Name WindowsTerminal, Code, Cursor, Windsurf -ErrorAction SilentlyContinue |
+          Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero -and $_.MainWindowTitle -match '^[^\p{L}\p{N}\s]\s|claude' } |
+          Select-Object -First 1
+        if ($hit) { $target = $hit.MainWindowHandle }
+      }
+      if ($target -ne [IntPtr]::Zero) { [Fg]::Bring($target) }
     }
   }
 
