@@ -28,6 +28,9 @@
       <li><b>The window in front.</b> Its title and program name, to know whether you're looking at Claude Code, and, with Lock-in mode on, whether a browser tab's title matches its list of adult sites. Also its size and position, so Claude can get out of the way of fullscreen games and videos, and its title to notice other AI assistants.</li>
       <li><b>The browser's tab strip</b>, only when Lock-in mode closes a tab, to find where the tab is on screen.</li>
       <li><b>What's playing.</b> The app, artist, title and album that Windows' media controls report, so Claude can dance to music or watch videos with you.</li>
+      <li><b>Whether an app is using your microphone</b>, so it can keep quiet during calls. It checks the list Windows keeps of apps using the microphone (on Linux, PulseAudio's list of recordings). It never records or hears anything.</li>
+      <li><b>Whether a Hitman game is running</b>, by looking at the names of running programs, so Claude can suit up.</li>
+      <li><b>A few counts</b> for the daily recap and the achievements, like finished tasks and minutes of work, saved in <code>%APPDATA%\claudetop\stats.json</code>. Only the last 60 days are kept.</li>
       <li><b>Which window to bring up.</b> When you click the little Claude, it brings the window that session runs in to the front. That's the only time it switches windows.</li>
       <li><b>Your settings</b>, saved in <code>%APPDATA%\claudetop\config.json</code>.</li>
     </ul>

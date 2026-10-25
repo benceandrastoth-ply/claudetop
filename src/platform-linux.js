@@ -103,8 +103,15 @@ function hitmanRunning() {
   }
 }
 
-function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn, onHitman = () => {} }) {
+// Is any app recording from a microphone (PulseAudio/PipeWire)? Needs pactl; unknown = no.
+async function micInUse() {
+  const out = await run('pactl', ['list', 'short', 'source-outputs']);
+  return out.trim().length > 0;
+}
+
+function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn, onHitman = () => {}, onMic = () => {} }) {
   let lastHitman = null;
+  let lastMic = null;
   const blockRe = new RegExp(blocklist, 'i');
   let stopped = false;
   let lastFocus = '';
@@ -147,6 +154,11 @@ function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn,
       if (h !== lastHitman) {
         lastHitman = h;
         onHitman(h);
+      }
+      const mic = await micInUse();
+      if (mic !== lastMic) {
+        lastMic = mic;
+        onMic(mic);
       }
     }
     if (tick % 4 === 0) {

@@ -19,4 +19,6 @@ contextBridge.exposeInMainWorld('claudetop', {
   jumpTo: (chain) => ipcRenderer.send('jump-to', chain),
   setHidden: (hidden) => ipcRenderer.send('set-hidden', hidden),
   onGame: (fn) => ipcRenderer.on('game', (_e, game) => fn(game)),
+  onAchievement: (fn) => ipcRenderer.on('achievement', (_e, a) => fn(a)),
+  stat: (key, amount) => ipcRenderer.send('stat', key, amount),
 });

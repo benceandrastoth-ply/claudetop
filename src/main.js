@@ -69,6 +69,8 @@ if (SETUP_FLAGS.some((f) => process.argv.includes(f)) || hatArg) {
 
 const SESSIONS_DIR = path.join(os.homedir(), '.claude', 'claudetop', 'sessions');
 const CONFIG_FILE = path.join(app.getPath('userData'), 'config.json');
+const { createStats, duration } = require('./stats');
+const stats = createStats(path.join(app.getPath('userData'), 'stats.json'));
 const STRIP_HEIGHT = 230;
 const STALE_MS = 24 * 60 * 60 * 1000;
 
@@ -86,6 +88,10 @@ let config = {
   tv: true, // sit down and watch a little TV while you watch videos
   jealous: true, // cry when you open another AI
   hitmanAuto: true, // turn into Agent 47 while a Hitman game is running
+  sounds: true, // a jingle when work is done, a ping when Claude Code needs you
+  dnd: false, // do not disturb, switched on by hand
+  dndCalls: true, // do not disturb while an app uses the microphone (calls, streams)
+  birthday: null, // "MM-DD"
   gameMode: true, // hide on a fullscreen game's screen, play along on the others
   seasonal: true, // snow in winter, a pumpkin at Halloween...
   setupDone: false, // Linux: the first-launch question has been asked (Windows asks in the installer)
@@ -143,16 +149,52 @@ function saveConfig() {
 
 // While Hitman runs, Claude is Agent 47, whatever hat is saved; it changes back afterwards.
 let hitmanRunning = false;
+let hitmanSince = 0;
+let micInUse = false; // some app is using the microphone: probably a call
 function shownConfig() {
   const hitman = config.hitmanAuto && hitmanRunning && config.hat !== 'agent47';
-  return { ...config, hat: hitman ? 'agent47' : config.hat, hitmanActive: hitman };
+  return { ...config, hat: hitman ? 'agent47' : config.hat, hitmanActive: hitman, hitmanRunning, hitmanSince, micInUse };
 }
 
 function setHitman(running) {
   if (running === hitmanRunning) return;
   hitmanRunning = running;
+  hitmanSince = running ? Date.now() : 0;
+  if (running) countStat('hitman');
   pushConfig();
 }
+
+function setMic(inUse) {
+  if (inUse === micInUse) return;
+  micInUse = inUse;
+  pushConfig();
+}
+
+// ---------- stats and achievements ----------
+function countStat(key, amount = 1) {
+  const unlocked = stats.add(key, amount);
+  for (const a of unlocked) if (win) win.webContents.send('achievement', a);
+  updateRecap();
+  if (unlocked.length) rebuildMenus();
+}
+
+function recapText() {
+  const t = stats.todayStats();
+  if (!t.tasks && !t.workMs) return 'Today: nothing yet';
+  const silent = t.silent ? `, ${t.silent} without a prompt` : '';
+  return `Today: ${t.tasks} task${t.tasks === 1 ? '' : 's'}, ${duration(t.workMs)} of work${silent}`;
+}
+
+let lastRecap = '';
+function updateRecap() {
+  const text = recapText();
+  if (text === lastRecap) return;
+  lastRecap = text;
+  if (tray) tray.setToolTip(`claudetop\n${text}`);
+  rebuildMenus();
+}
+
+ipcMain.on('stat', (_e, key, amount) => countStat(String(key), Number(amount) || 1));
 
 function pushConfig() {
   if (win) win.webContents.send('config', shownConfig());
@@ -217,6 +259,7 @@ function watchFocusLinux() {
     },
     onLockIn: (id, windowRect, tabRect) => startLockIn(id, parseRect(windowRect), parseRect(tabRect)),
     onHitman: setHitman,
+    onMic: setMic,
   });
 }
 
@@ -249,6 +292,10 @@ function watchFocus() {
       if (line.startsWith('LOCKIN\t')) {
         const [, hwnd, windowRect, tabRect] = line.split('\t');
         startLockIn(hwnd, parseRect(windowRect), parseRect(tabRect));
+        continue;
+      }
+      if (line.startsWith('MIC\t')) {
+        setMic(line.split('\t')[1] === '1');
         continue;
       }
       if (line.startsWith('HITMAN\t')) {
@@ -438,6 +485,7 @@ function createWindow() {
     backgroundColor: '#00000000',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      autoplayPolicy: 'no-user-gesture-required', // the jingles play without a click first
     },
   });
   win.setAlwaysOnTop(true, 'screen-saver');
@@ -482,6 +530,14 @@ const PREVIEWS = [
 function menuTemplate() {
   return [
     { label: 'claudetop', enabled: false },
+    { label: recapText(), enabled: false },
+    {
+      label: `Achievements (${stats.achievements().filter((a) => a.unlocked).length}/${stats.achievements().length})`,
+      submenu: stats.achievements().map((a) => ({
+        label: a.unlocked ? `🏆 ${a.name}${a.description ? ` – ${a.description}` : ''}` : a.description ? `🔒 ${a.name} – ${a.description}` : '🔒 ???',
+        enabled: false,
+      })),
+    },
     { type: 'separator' },
     {
       label: 'Walk around',
@@ -546,6 +602,28 @@ function menuTemplate() {
       type: 'checkbox',
       checked: config.tv,
       click: (item) => setFlag('tv', item.checked),
+    },
+    {
+      label: 'Sounds',
+      type: 'checkbox',
+      checked: config.sounds,
+      click: (item) => setFlag('sounds', item.checked),
+    },
+    {
+      label: 'Do not disturb',
+      type: 'checkbox',
+      checked: config.dnd,
+      click: (item) => setFlag('dnd', item.checked),
+    },
+    {
+      label: 'Quiet during calls (microphone in use)',
+      type: 'checkbox',
+      checked: config.dndCalls,
+      click: (item) => setFlag('dndCalls', item.checked),
+    },
+    {
+      label: 'Your birthday',
+      submenu: birthdayMenu(),
     },
     {
       label: 'Become Agent 47 while Hitman runs',
@@ -629,6 +707,21 @@ function menuTemplate() {
 // Unpackaged, the login item must launch electron.exe *with* this app's folder.
 function loginItem() {
   return app.isPackaged ? {} : { path: process.execPath, args: [app.getAppPath()] };
+}
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+function birthdayMenu() {
+  const pad = (n) => String(n).padStart(2, '0');
+  return [
+    { label: 'Not set', type: 'radio', checked: !config.birthday, click: () => setFlag('birthday', null) },
+    ...MONTHS.map((name, m) => ({
+      label: name,
+      submenu: Array.from({ length: new Date(2024, m + 1, 0).getDate() }, (_, i) => {
+        const value = `${pad(m + 1)}-${pad(i + 1)}`;
+        return { label: `${name} ${i + 1}`, type: 'radio', checked: config.birthday === value, click: () => setFlag('birthday', value) };
+      }),
+    })),
+  ];
 }
 
 function rebuildMenus() {
@@ -818,7 +911,7 @@ if (!app.requestSingleInstanceLock()) {
     watchSessions();
     watchFocus();
     tray = new Tray(trayIcon());
-    tray.setToolTip('claudetop');
+    tray.setToolTip(`claudetop\n${recapText()}`);
     tray.on('click', () => tray.popUpContextMenu());
     rebuildMenus();
     if (isLinux) {

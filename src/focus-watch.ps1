@@ -93,6 +93,8 @@ try {
 } catch { $media = $null }
 $lastMedia = $null
 $lastHitman = $null
+$lastMic = $null
+$micKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone'
 # Every Hitman game's process name, Codename 47 to World of Assassination.
 $hitmanNames = 'HITMAN', 'HITMAN2', 'HITMAN3', 'HMA', 'HitmanBloodMoney', 'HitmanContracts'
 $tick = 0
@@ -174,6 +176,15 @@ while ($true) {
       [Console]::Out.WriteLine("HITMAN`t$([int]$h)")
       [Console]::Out.Flush()
       $lastHitman = $h
+    }
+    # "MIC`t<0|1>": an app is using the microphone right now (a call, a stream).
+    $mic = [bool](Get-ChildItem $micKey -Recurse -ErrorAction SilentlyContinue | Where-Object {
+      $_.GetValue('LastUsedTimeStop') -eq 0 -and $_.GetValue('LastUsedTimeStart') -gt 0
+    } | Select-Object -First 1)
+    if ($mic -ne $lastMic) {
+      [Console]::Out.WriteLine("MIC`t$([int]$mic)")
+      [Console]::Out.Flush()
+      $lastMic = $mic
     }
   }
   if ($media -and $tick % 4 -eq 0) {

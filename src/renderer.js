@@ -130,6 +130,9 @@ function setState(next) {
     setTimeout(() => el.classList.remove('celebrate'), 1600);
   }
   if (state === 'working') walker.pauseUntil = 0;
+  if (state === 'done' && prev !== 'done') play('done');
+  if (state === 'waiting' && prev !== 'waiting') play('waiting');
+  if (state === 'recharged' && prev !== 'recharged') play('recharged');
   if (state === 'done' && prev !== 'done') {
     flamingo = isAgent() && Math.random() < 1 / 12;
     const job = latestSession();
@@ -202,7 +205,7 @@ function latestSession() {
 // Panic only while nobody has looked yet. If you were in Claude Code when it finished,
 // there's nothing to panic about.
 function shouldPanic() {
-  if (state !== 'done' || !config.panicWhenDone || scene) return false;
+  if (state !== 'done' || !config.panicWhenDone || scene || quiet()) return false;
   if (config.preview) return true;
   const latest = latestSession();
   const f = latest && finished.get(latest.id);
@@ -233,6 +236,7 @@ function updatePanic() {
   walker.target = null;
   clearInterval(panicTimer);
   if (want) {
+    stat('panics');
     setSpanning(true);
     panicLine = Math.floor(Math.random() * PANIC_LINES.length);
     panicTimer = setInterval(() => {
@@ -394,9 +398,10 @@ function checkJealous() {
   const fresh = ai && ai !== lastAi;
   lastAi = ai;
   if (!fresh || config.jealous === false) return;
-  if (puppet || crying || dragging || panicking || scene || tv) return;
+  if (puppet || crying || dragging || panicking || scene || tv || quiet()) return;
   if (performance.now() - lastCry < CRY_COOLDOWN_MS) return;
   cry(ai);
+  stat('cries');
 }
 
 async function cry(ai) {
@@ -506,6 +511,7 @@ async function kickTv() {
   if (!tv || tvKicking) return;
   tvKicking = true;
   puppet = true;
+  stat('tvKicks');
   const t = tv;
   setSpanning(true); // it's going across every screen
   el.classList.remove('watching');
@@ -1176,6 +1182,7 @@ async function lockIn(job) {
   for (let i = 0; puppet && i < 60; i++) await wait(100);
   if (puppet) return;
   puppet = true;
+  stat('lockins');
   lockInMessage = job.message;
   el.classList.add('lockin');
   walker.target = null;
@@ -1265,6 +1272,7 @@ function updateDoing(now = Date.now()) {
   }
   if (bag !== sleepbag) {
     sleepbag = bag;
+    if (bag && debug.minutes == null) stat('marathon');
     el.classList.toggle('sleepbag', bag);
     walker.target = null;
   }
@@ -1284,6 +1292,7 @@ function updateDisguise(lead) {
   }
   if (debug.disguise !== undefined) d = isAgent() ? debug.disguise : null;
   if (d === disguise) return;
+  if (d === 'flamingo' && debug.disguise === undefined) stat('flamingos');
   if (entered) poof(headPoint().x, headPoint().y + 6); // a quick change, behind a puff of smoke
   disguise = d;
   for (const k of ['chef', 'mechanic', 'flamingo']) el.classList.toggle(`disguise-${k}`, k === d);
@@ -1336,12 +1345,13 @@ function checkRage() {
 }
 
 async function flipTable() {
-  if (puppet || panicking || crying || scene) return;
+  if (puppet || panicking || crying || scene || quiet()) return;
   puppet = true;
   walker.target = null;
   el.classList.remove('walking');
   updateDance();
   updateDoing();
+  if (!isAgent()) stat('tables');
   if (isAgent()) {
     // 47 doesn't flip tables.
     lockInMessage = 'Complications.';
@@ -1431,6 +1441,14 @@ let fireworksTimer = null;
 function applySeason() {
   season = config.seasonal === false ? { hat: null, snow: false, fireworks: false, cockade: false } : seasonFor(seasonDate());
   seasonHat = ['none', 'agent47'].includes(config.hat) ? season.hat : null; // a hat of your own wins (47 has none)
+  const ownHat = ['hard', 'propeller', 'miner'].includes(config.hat);
+  if (isBirthday() && !ownHat) seasonHat = 'party';
+  el.classList.toggle('night-cap', isNight() && !ownHat && !seasonHat);
+  if (isBirthday() && !confettiTimer) confettiTimer = setInterval(confetto, 280);
+  if (!isBirthday() && confettiTimer) {
+    clearInterval(confettiTimer);
+    confettiTimer = null;
+  }
   for (const k of ['pumpkin', 'santa', 'party']) el.classList.toggle(`season-${k}`, k === seasonHat);
   el.classList.toggle('wear-cockade', season.cockade);
   updateHatClasses();
@@ -1539,7 +1557,7 @@ function updateGame(now = performance.now()) {
     renderBubble();
     renderInfo();
   }
-  if (gaming && now > nextGameLine) {
+  if (gaming && now > nextGameLine && !quiet()) {
     const hitman = /hitman/i.test(`${game.name} ${game.title}`);
     gameLine = pick(isAgent() ? GAME_LINES_47 : hitman && Math.random() < 0.6 ? GAME_LINES_HITMAN : GAME_LINES);
     nextGameLine = now + 9000 + Math.random() * 9000;
@@ -1674,6 +1692,261 @@ function jumpToLead() {
   setTimeout(() => el.classList.remove('jumped'), 550);
 }
 
+// ---------- do not disturb ----------
+// By hand, or automatically while an app uses the microphone (a call, a stream): no sounds,
+// no panic runs, no tears, no flipped tables, no chatter.
+const quiet = () => !!config.dnd || (config.dndCalls !== false && !!config.micInUse);
+
+// Say something for a moment (game chatter, night-owl nagging, birthday wishes...).
+function say(text, ms = 2600) {
+  gameLine = text;
+  renderBubble();
+  setTimeout(() => {
+    if (gameLine === text) gameLine = null;
+    renderBubble();
+  }, ms);
+}
+
+// ---------- sounds ----------
+// Little 8-bit jingles, synthesised on the spot (no sound files).
+let audio = null;
+const SOUNDS = {
+  done: { type: 'square', notes: [[523, 0, 0.11], [659, 0.1, 0.11], [784, 0.2, 0.11], [1047, 0.3, 0.3]] },
+  waiting: { type: 'square', notes: [[880, 0, 0.1], [660, 0.15, 0.2]] },
+  achievement: { type: 'square', notes: [[784, 0, 0.09], [988, 0.08, 0.09], [1175, 0.16, 0.09], [1568, 0.24, 0.4]] },
+  recharged: { type: 'triangle', notes: [[392, 0, 0.1], [523, 0.08, 0.1], [659, 0.16, 0.1], [784, 0.24, 0.1], [1047, 0.32, 0.35]] },
+  // 47 prefers something lower.
+  done47: { type: 'triangle', notes: [[196, 0, 0.3], [247, 0.28, 0.3], [294, 0.56, 0.6]] },
+  waiting47: { type: 'triangle', notes: [[294, 0, 0.18], [247, 0.2, 0.35]] },
+};
+
+function play(name) {
+  if (config.sounds === false || quiet()) return;
+  const sound = SOUNDS[isAgent() && SOUNDS[`${name}47`] ? `${name}47` : name];
+  if (!sound) return;
+  try {
+    audio = audio || new AudioContext();
+    const t0 = audio.currentTime + 0.02;
+    for (const [freq, start, dur] of sound.notes) {
+      const o = audio.createOscillator();
+      const g = audio.createGain();
+      o.type = sound.type;
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.05, t0 + start);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + start + dur);
+      o.connect(g).connect(audio.destination);
+      o.start(t0 + start);
+      o.stop(t0 + start + dur + 0.05);
+    }
+  } catch {}
+}
+
+// ---------- stats and achievements ----------
+const appStart = Date.now();
+const countedTasks = new Set();
+let workAcc = 0;
+let lastWorkFlush = Date.now();
+let nightCounted = '';
+const stat = (key, amount = 1) => window.claudetop.stat(key, amount);
+
+function countTasks() {
+  for (const s of sessions) {
+    if (s.state !== 'done' || s.at < appStart) continue;
+    const key = `${s.id}:${s.at}`;
+    if (countedTasks.has(key)) continue;
+    countedTasks.add(key);
+    stat('tasks');
+    if (s.prompts === 0) stat('silent');
+  }
+}
+
+function countWork(now = Date.now()) {
+  const working = sessions.some((s) => s.state === 'working' && now - s.at < WORKING_STALE_MS);
+  if (working) {
+    workAcc += 500;
+    const day = new Date(now).toDateString();
+    if (new Date(now).getHours() < 5 && nightCounted !== day) {
+      nightCounted = day;
+      stat('night');
+    }
+  }
+  if (now - lastWorkFlush > 30000) {
+    if (workAcc) stat('workMs', workAcc);
+    workAcc = 0;
+    lastWorkFlush = now;
+  }
+}
+
+const achievementQueue = [];
+window.claudetop.onAchievement((a) => {
+  achievementQueue.push(a);
+  showAchievements();
+});
+
+let showingAchievement = false;
+async function showAchievements() {
+  if (showingAchievement || quiet() || hiddenForGame) return;
+  const a = achievementQueue.shift();
+  if (!a) return;
+  showingAchievement = true;
+  const t = document.createElement('div');
+  t.className = 'achievement';
+  t.innerHTML =
+    `<span class="a-cup">🏆</span><span><span class="a-head">ACHIEVEMENT UNLOCKED</span>` +
+    `<span class="a-name">${escapeHtml(a.name)}</span>${a.description ? `<span class="a-text">${escapeHtml(a.description)}</span>` : ''}</span>`;
+  const head = headPoint();
+  t.style.left = `${Math.max(150, Math.min(window.innerWidth - 150, head.x))}px`;
+  t.style.top = `${Math.max(4, head.y - 112)}px`;
+  fx.appendChild(t);
+  play('achievement');
+  await wait(5000);
+  t.classList.add('leaving');
+  await wait(550);
+  t.remove();
+  showingAchievement = false;
+  showAchievements();
+}
+
+// ---------- night owl and birthdays ----------
+// Between midnight and 5 a.m. Claude wears a nightcap, yawns, and tells you to go to bed.
+// On your birthday: party hat, confetti, and wishes.
+const isNight = (d = seasonDate()) => d.getHours() < 5;
+function isBirthday(d = seasonDate()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return !!config.birthday && config.birthday === `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+let nextYawn = 0;
+let nextNag = 0;
+let nextWish = 0;
+let lastActive = Date.now(); // you switched windows: you're up
+let confettiTimer = null;
+
+function nightAndBirthdayTick(now = Date.now()) {
+  const busy = puppet || panicking || scene || crying || dancing || gaming || dragging;
+  if (isNight() && !busy) {
+    if (now > nextYawn) {
+      if (nextYawn) {
+        el.classList.add('yawn');
+        setTimeout(() => el.classList.remove('yawn'), 1600);
+        if (!quiet()) say('*yawn*', 1600);
+      }
+      nextYawn = now + 120000 + Math.random() * 120000;
+    }
+    if (now > nextNag && now - lastActive < 120000 && !quiet()) {
+      if (nextNag) say(pick(isAgent() ? ['Even I sleep.', 'Rest is part of the job.'] : ['go to sleep 😴', "It's late…", 'Bed. Now.', 'The code will still be here tomorrow']), 3200);
+      nextNag = now + 15 * 60000 + Math.random() * 10 * 60000;
+    }
+  }
+  if (isBirthday() && !busy && !quiet() && now > nextWish) {
+    say(isAgent() ? 'Happy birthday. Don’t tell anyone I said that.' : pick(['Happy birthday! 🎂', 'It’s your birthday!! 🎉', 'Happy birthday!! 🥳']), 4000);
+    nextWish = now + 45 * 60000;
+  }
+}
+
+function confetto() {
+  if (document.hidden) return;
+  const { min, max } = walkRange();
+  const c = document.createElement('i');
+  c.className = 'confetti';
+  const x = min + Math.random() * (max + WIDTH - min);
+  c.style.left = `${x}px`;
+  c.style.setProperty('--c', pick(['#ff5fa2', '#ffd23f', '#36d6ff', '#7cf06b', '#b07cff', '#ff8a3d']));
+  c.style.setProperty('--fall', `${floorY(x) + 8}px`);
+  c.style.setProperty('--drift', `${(Math.random() - 0.5) * 60}px`);
+  const t = 2.5 + Math.random() * 2;
+  c.style.setProperty('--t', `${t}s`);
+  fx.appendChild(c);
+  setTimeout(() => c.remove(), t * 1000 + 100);
+}
+
+// ---------- Hitman ----------
+// While a Hitman game runs, 47 cheers you on now and then; when it closes, he takes a bow.
+let nextHitmanLine = 0;
+function hitmanTick(now = Date.now()) {
+  if (!config.hitmanRunning || quiet() || puppet || panicking) return;
+  if (!nextHitmanLine) nextHitmanLine = (config.hitmanSince || now) + 15 * 60000;
+  if (now < nextHitmanLine) return;
+  const minutes = Math.round((now - (config.hitmanSince || now)) / 60000);
+  say(pick(['Patience. The target always comes.', 'Still undetected?', 'Remember the exit.', 'Nice work out there.', 'Don’t forget the coin.', `${minutes} minutes in. Professional.`]), 3500);
+  nextHitmanLine = now + 15 * 60000 + Math.random() * 10 * 60000;
+}
+
+function hitmanChanged(started, hatChanged) {
+  if (!entered) return;
+  if (started) {
+    nextHitmanLine = 0;
+    if (!quiet()) say(hatChanged ? pick(['Suit up.', 'Time to work.', 'Hitman? Say no more.']) : 'Mission briefing received.');
+    return;
+  }
+  el.classList.add('bow');
+  setTimeout(() => el.classList.remove('bow'), 1400);
+  if (!quiet()) say(hatChanged ? pick(['Good game.', 'Back to the day job.']) : 'Good game.', 3000);
+}
+
+// ---------- throwing Claude ----------
+// Pick Claude up and let go with some speed: it flies, bounces off the edges, lands dizzy.
+const GRAVITY = 1800; // px/s²
+async function fling(vx, vy) {
+  puppet = true;
+  walker.target = null;
+  el.classList.add('flung');
+  const H = window.innerHeight;
+  const { min, max } = walkRange();
+  let b = walker.airBottom ?? 4 + groundAt(walker.x);
+  let last = performance.now();
+  let bounces = 0;
+  await new Promise((resolve) => {
+    const step = (t) => {
+      const dt = Math.min(0.033, (t - last) / 1000);
+      last = t;
+      vy -= GRAVITY * dt;
+      walker.x += vx * dt;
+      b += vy * dt;
+      walker.rot += vx * dt * 1.4;
+      if (walker.x < min) { walker.x = min; vx = Math.abs(vx) * 0.7; burst(walker.x, H - b - 30); }
+      if (walker.x > max) { walker.x = max; vx = -Math.abs(vx) * 0.7; burst(walker.x + WIDTH, H - b - 30); }
+      if (b + 64 > H) { b = H - 64; vy = -Math.abs(vy) * 0.5; }
+      const floor = 4 + groundAt(walker.x);
+      if (b <= floor) {
+        b = floor;
+        if (Math.abs(vy) > 260 && bounces < 4) {
+          vy = Math.abs(vy) * 0.42;
+          vx *= 0.75;
+          bounces++;
+          dirt(walker.x + WIDTH / 2, floorY(walker.x + WIDTH / 2) - 4, 5);
+        } else {
+          walker.airBottom = null;
+          resolve();
+          return;
+        }
+      }
+      walker.airBottom = b;
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+  // Land upright, a little dizzy.
+  const rot = walker.rot % 360;
+  const target = Math.abs(rot) > 180 ? Math.sign(rot) * 360 : 0;
+  await tween(220, (p) => {
+    walker.rot = rot + (target - rot) * p;
+  });
+  walker.rot = 0;
+  el.classList.remove('flung');
+  el.classList.add('landing');
+  const cx = walker.x + WIDTH / 2;
+  const stars = dizzyStars(cx, floorY(cx) - 80);
+  await wait(300);
+  el.classList.remove('landing');
+  stat('flings');
+  if (!quiet()) say(isAgent() ? pick(['Unnecessary.', 'I’ll remember that.']) : pick(['whoa…', 'again!!', 'the room is spinning', 'rude.']), 2200);
+  await wait(1500);
+  stars.remove();
+  walker.pauseUntil = performance.now() + 1500;
+  puppet = false;
+}
+
 // ---------- hover info ----------
 const LABELS = {
   working: 'working',
@@ -1718,6 +1991,7 @@ function renderInfo() {
     rows.push(`♪ ${escapeHtml(song || 'Vibing')}`);
   }
   if (tv) rows.push(`📺 ${escapeHtml(media.title || 'Watching TV')}`);
+  if (quiet()) rows.push(`🔕 Do not disturb${config.dnd ? '' : ' (a call is on)'}`);
   if (gaming) rows.push(`🎮 Playing along: ${escapeHtml(game.title || game.name || 'a game')}`);
   if (sessions.length) rows.push('<span class="muted">Click to open Claude Code</span>');
   rows.push(`<span class="muted">${config.mode === 'walk' ? 'Walking around' : 'Staying put'} · right-click for options</span>`);
@@ -1935,8 +2209,17 @@ el.addEventListener('mouseleave', () => {
 });
 
 el.addEventListener('mousedown', (e) => {
-  if (e.button !== 0) return;
-  dragging = { offset: e.clientX - walker.x, startX: e.clientX, startY: e.clientY, at: performance.now(), moved: false };
+  if (e.button !== 0 || puppet) return;
+  const r = el.getBoundingClientRect();
+  dragging = {
+    offset: e.clientX - walker.x,
+    grabBottom: r.bottom - e.clientY, // where on Claude you grabbed it
+    startX: e.clientX,
+    startY: e.clientY,
+    at: performance.now(),
+    moved: false,
+    samples: [],
+  };
   walker.target = null;
   el.classList.add('dragging');
 });
@@ -1947,18 +2230,58 @@ window.addEventListener('mousemove', (e) => {
   dragging.moved = true;
   const { min, max } = walkRange();
   walker.x = Math.max(min, Math.min(max, e.clientX - dragging.offset));
+  // Lift it off the floor too.
+  const floor = 4 + groundAt(walker.x);
+  const b = window.innerHeight - e.clientY - dragging.grabBottom;
+  walker.airBottom = b > floor + 6 ? Math.min(b, window.innerHeight - 64) : null;
+  el.classList.toggle('held', walker.airBottom !== null);
+  const t = performance.now();
+  dragging.samples.push({ x: e.clientX, y: e.clientY, t });
+  while (dragging.samples.length > 2 && t - dragging.samples[0].t > 90) dragging.samples.shift();
 });
+
+// Let go in mid-air: drop to the floor.
+async function drop() {
+  puppet = true;
+  const top = walker.airBottom;
+  const land = 4 + groundAt(walker.x);
+  el.classList.add('falling');
+  await tween(Math.max(200, Math.sqrt(Math.max(1, top - land)) * 22), (p) => {
+    walker.airBottom = top + (land - top) * p * p;
+  });
+  walker.airBottom = null;
+  el.classList.remove('falling');
+  el.classList.add('landing');
+  await wait(300);
+  el.classList.remove('landing');
+  puppet = false;
+}
 
 window.addEventListener('mouseup', () => {
   if (!dragging) return;
   const click = !dragging.moved && performance.now() - dragging.at < 500;
+  const samples = dragging.samples;
   dragging = null;
-  el.classList.remove('dragging');
+  el.classList.remove('dragging', 'held');
   if (click) {
     jumpToLead();
     if (!hovering) window.claudetop.setIgnoreMouse(true);
     return;
   }
+  // Thrown? (how fast the mouse was going when you let go)
+  const a = samples[0];
+  const z = samples[samples.length - 1];
+  const dt = a && z ? (z.t - a.t) / 1000 : 0;
+  if (dt > 0.01 && performance.now() - z.t < 120) {
+    const vx = (z.x - a.x) / dt;
+    const vy = -(z.y - a.y) / dt;
+    if (Math.hypot(vx, vy) > 500) {
+      fling(Math.max(-2600, Math.min(2600, vx)), Math.max(-2600, Math.min(2600, vy)));
+      if (!hovering) window.claudetop.setIgnoreMouse(true);
+      return;
+    }
+  }
+  if (walker.airBottom !== null) drop();
   if (config.mode === 'fixed' && !spanning) {
     config.fixedX = walker.x - home().left;
     window.claudetop.setFixedX(config.fixedX);
@@ -1979,7 +2302,8 @@ window.claudetop.onConfig((cfg) => {
   const enteringFixed = configLoaded && cfg.mode === 'fixed' && config.mode !== 'fixed';
   const oldHat = config.hat;
   const hatChanged = configLoaded && cfg.hat !== config.hat;
-  const wasHitman = !!config.hitmanActive;
+  const wasRunning = !!config.hitmanRunning;
+  const firstConfig = !configLoaded;
   const movedScreen = configLoaded && cfg.displayId !== config.displayId;
   configLoaded = true;
   config = cfg;
@@ -1995,17 +2319,7 @@ window.claudetop.onConfig((cfg) => {
   el.classList.toggle('hat-agent47', config.hat === 'agent47');
   if (hatChanged) renderBubble(); // Agent 47 has his own lines
   if (hatChanged && !puppet && entered) swapHat(oldHat);
-  if (hatChanged && entered) {
-    const line = cfg.hitmanActive ? pick(['Suit up.', 'Time to work.', 'Hitman? Say no more.']) : wasHitman ? pick(['Good game.', 'Back to the day job.']) : null;
-    if (line) {
-      gameLine = line;
-      renderBubble();
-      setTimeout(() => {
-        if (gameLine === line) gameLine = null;
-        renderBubble();
-      }, 2600);
-    }
-  }
+  if (!firstConfig && !!cfg.hitmanRunning !== wasRunning) hitmanChanged(!!cfg.hitmanRunning, hatChanged);
   // A panic run or relief walk already ends on the new home screen by itself.
   if (movedScreen && !panicking && !scene && !puppet) {
     pendingMove = true;
@@ -2071,6 +2385,7 @@ window.claudetop.onSessions((list) => {
   sessions = list;
   setState(computeState(Date.now()));
   checkRage();
+  countTasks();
   updateBuddies();
   updateDoing();
   if (hovering) renderInfo();
@@ -2079,6 +2394,7 @@ window.claudetop.onSessions((list) => {
 window.claudetop.onLockIn(lockIn);
 
 window.claudetop.onFocus((f) => {
+  if (f.title !== focus.title || f.pid !== focus.pid) lastActive = Date.now();
   focus = f;
   checkJealous();
   setState(computeState(Date.now()));
@@ -2092,6 +2408,10 @@ setInterval(() => {
   updateDoing();
   updateGame();
   updateBuddies();
+  countWork();
+  nightAndBirthdayTick();
+  hitmanTick();
+  showAchievements();
   if (hovering) renderInfo();
 }, 500);
 setInterval(applySeason, 60 * 1000);

@@ -45,6 +45,19 @@ the session or its title looks like a Claude Code title (`✳ topic`, `◑ topic
   20 August). Only when Claude has no hat of its own.
 - **Become Agent 47 while Hitman runs**: start any Hitman game and Claude suits up; quit it and its
   usual hat comes back. Your saved hat isn't touched.
+- **Sounds**: an 8-bit jingle when work is done, a ping when Claude Code needs you (Agent 47 gets
+  lower ones).
+- **Do not disturb**: switch it on by hand, or let it switch itself on while any app uses the
+  microphone (calls, streams). No sounds, panic runs, tears, flipped tables or chatter meanwhile.
+- **Daily recap**: hover the tray icon, or see the top of the menu: tasks finished today, time
+  worked, tasks without a permission prompt.
+- **Achievements**: 17 of them, some hidden; they pop up as Claude unlocks them. The list is in the
+  right-click menu.
+- **Night owl**: between midnight and 5 a.m. Claude wears a nightcap, yawns, and tells you to sleep.
+- **Birthday**: set yours in the right-click menu for a party hat, confetti and wishes on the day.
+- **Throw Claude**: drag it up to lift it, let go to drop it, fling it to watch it bounce off the
+  edges.
+- **Hitman**: while a Hitman game runs, 47 cheers you on every so often; when it closes he bows.
 - **Agent 47 extras**: disguises (a chef while editing, a mechanic while tests fail, and a rare
   flamingo), and a mission rating after each job: Silent Assassin if it needed no permission prompts.
 - **Show on screen**: pick which monitor it lives on (it walks over).

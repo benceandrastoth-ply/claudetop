@@ -1114,3 +1114,76 @@ svg .cockade .ck-r { fill: #d32f2f; }
 #claude.jumped .bob { animation: hop 0.5s ease-out 1; }
 /* a disguise brings its own headgear */
 #claude[class*="disguise-"] .hat.pumpkin, #claude[class*="disguise-"] .hat.santa, #claude[class*="disguise-"] .hat.party { display: none; }
+
+/* ---------- night owl ---------- */
+#claude.night-cap .hat.nightcap { display: inline; }
+svg .nightcap .nc { fill: #3d5a9e; }
+svg .nightcap .nc-band { fill: #f2f2f2; }
+svg .nightcap .nc-pom { fill: #f2f2f2; }
+#claude.yawn .bob { animation: yawn 1.6s ease-in-out; }
+#claude.yawn .eyes-open, #claude.yawn .eyes-panic { display: none; }
+#claude.yawn .eyes-closed { display: inline; }
+#claude.yawn .arm { transform: translateY(-3px); transition: transform 0.4s; }
+@keyframes yawn {
+  0%, 100% { transform: none; }
+  35%, 65% { transform: scaleY(1.12) scaleX(0.95); }
+}
+
+/* ---------- Agent 47 takes a bow when Hitman closes ---------- */
+#claude.bow .bob { animation: bow 1.4s ease-in-out; }
+@keyframes bow {
+  0%, 100% { transform: none; }
+  30%, 65% { transform: translateY(4px) rotate(22deg) scaleY(0.92); }
+}
+
+/* ---------- thrown around ---------- */
+#claude.held .bob { transform: translateY(-2px) scaleY(1.06); }
+#claude.held .legs-a, #claude.held .legs-b { animation: step 0.18s steps(1) infinite; }
+#claude.held .eyes-open, #claude.held .eyes-closed { display: none; }
+#claude.held .eyes-panic { display: inline; }
+#claude.held .bubble { opacity: 0; }
+#claude.flung .eyes-open, #claude.flung .eyes-closed { display: none; }
+#claude.flung .eyes-panic { display: inline; }
+#claude.flung .bubble { opacity: 0; }
+
+/* ---------- birthday ---------- */
+.confetti {
+  position: absolute;
+  top: -10px;
+  width: 6px;
+  height: 9px;
+  background: var(--c);
+  pointer-events: none;
+  animation: confetti var(--t, 3s) linear forwards;
+}
+@keyframes confetti {
+  0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+  100% { transform: translate(var(--drift), var(--fall)) rotate(720deg); opacity: 0.2; }
+}
+
+/* ---------- achievement unlocked ---------- */
+.achievement {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 14px 8px 10px;
+  border-radius: 10px;
+  background: #1d1b2e;
+  border: 2px solid #ffd23f;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font: 600 12px "Segoe UI", sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: achin 0.45s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.achievement .a-cup { font-size: 22px; line-height: 1; }
+.achievement .a-head { display: block; color: #ffd23f; font-size: 10px; letter-spacing: 0.06em; }
+.achievement .a-name { display: block; font-size: 14px; }
+.achievement .a-text { display: block; color: #c9c6dc; font-weight: 400; font-size: 11px; }
+.achievement.leaving { opacity: 0; transform: translate(-50%, -10px); transition: opacity 0.5s, transform 0.5s; }
+@keyframes achin { from { opacity: 0; transform: translate(-50%, 14px) scale(0.8); } }
+#claude[class*="disguise-"] .hat.nightcap { display: none; }
+#claude.flung .bubble, #claude.held .bubble { transition: none; }

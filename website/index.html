@@ -124,6 +124,30 @@
             <dd>Some days of the year don't go unnoticed. A few of them are very Hungarian.</dd>
           </div>
           <div>
+            <dt>Sounds</dt>
+            <dd>A little jingle when the work is done, a different one when Claude Code needs you.</dd>
+          </div>
+          <div>
+            <dt>Do not disturb</dt>
+            <dd>Switch it on yourself, or let Claude notice when you're on a call. Either way, no noise and no scenes.</dd>
+          </div>
+          <div>
+            <dt>Achievements</dt>
+            <dd>There are a few. Some say what they're for. Some don't.</dd>
+          </div>
+          <div>
+            <dt>Late nights</dt>
+            <dd>Still coding at 2 a.m.? Claude will have something to say about that.</dd>
+          </div>
+          <div>
+            <dt>Birthdays</dt>
+            <dd>Tell Claude yours. It will remember.</dd>
+          </div>
+          <div>
+            <dt>Handle with care</dt>
+            <dd>You can pick Claude up. What happens next is between the two of you.</dd>
+          </div>
+          <div>
             <dt>Loyalty</dt>
             <dd>Claude knows it isn't the only AI out there. It would just rather not see you with the others.</dd>
           </div>
@@ -216,6 +240,10 @@
         <details>
           <summary>How do I check my download is genuine?</summary>
           <p>Each release below lists the installer's SHA-256 fingerprint. In PowerShell, run <code>Get-FileHash .\claudetop-Setup-*.exe</code> in your Downloads folder and check that the hash matches.</p>
+        </details>
+        <details>
+          <summary>How does it know I'm on a call?</summary>
+          <p>Windows (and Linux, through PulseAudio or PipeWire) keeps track of which apps are using your microphone. claudetop only checks whether any app is; it never hears anything. Turn this off in the right-click menu with "Quiet during calls".</p>
         </details>
         <details>
           <summary>Will it get in the way when I play games?</summary>
