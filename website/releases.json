@@ -1,5 +1,19 @@
 [
   {
+    "version": "0.8.0",
+    "date": "2026-10-25",
+    "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.0/claudetop-Setup-0.8.0.exe",
+    "linux": {
+      "appimage": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.0/claudetop-0.8.0-x86_64.AppImage",
+      "deb": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.0/claudetop-0.8.0-amd64.deb"
+    },
+    "size": 82001911,
+    "sha256": "b3ab13784bd29b3ab86a9a0c177739b28a74260813a40e0adabd4177daa16f31",
+    "notes": [
+      "Seven new hats, each with its own way of getting around and its own lock-in move: cowboy (horse, lasso), wizard (teleport, frog), pirate (boat, cannon), astronaut (low gravity, jetpack), ninja (dash, throwing star), crown (royal walk, a guard), chef (meatball, pie)."
+    ]
+  },
+  {
     "version": "0.7.0",
     "date": "2026-10-25",
     "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.7.0/claudetop-Setup-0.7.0.exe",
