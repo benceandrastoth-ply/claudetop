@@ -110,7 +110,8 @@ p { margin: 0 0 1em; }
 }
 .download:hover { transform: translateY(-2px); box-shadow: 0 8px 0 var(--accent-shade), 0 14px 28px rgba(0, 0, 0, 0.35); }
 .download:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--accent-shade); }
-.download-meta { margin-top: 18px; color: var(--muted); font-size: 0.95rem; }
+.download-meta { margin-top: 18px; color: var(--muted); font-size: 0.95rem; max-width: 40em; }
+.download-meta a { color: var(--paper); }
 .download-small { font-size: 1.1rem; padding: 12px 22px 10px; margin-top: 8px; }
 
 .try {

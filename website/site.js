@@ -36,14 +36,30 @@ const niceDate = (iso) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 const latest = releases.find((r) => r.file);
 
+// Offer the visitor's own system first, and the other one right below it.
+const ua = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.userAgent;
+const onLinux = /linux/i.test(ua) && !/android/i.test(ua);
+
 if (latest) {
+  const linuxBuild = latest.linux;
+  const useLinux = onLinux && linuxBuild;
   for (const id of ['download-main', 'download-setup']) {
     const a = document.getElementById(id);
-    a.href = latest.file;
-    a.setAttribute('download', '');
+    a.href = useLinux ? linuxBuild.appimage : latest.file;
+    a.textContent = useLinux ? 'Download for Linux' : 'Download for Windows';
   }
-  document.getElementById('download-meta').textContent =
-    `Version ${latest.version} for 64-bit Windows 10 and 11. ${mb(latest.size)}, released ${niceDate(latest.date)}. Free.`;
+  const meta = document.getElementById('download-meta');
+  const released = `released ${niceDate(latest.date)}`;
+  if (useLinux) {
+    meta.innerHTML =
+      `Version ${escapeHtml(latest.version)} for 64-bit Linux, ${released}. Free. ` +
+      `Prefer a package? <a href="${escapeHtml(linuxBuild.deb)}">.deb for Ubuntu and Debian</a>. ` +
+      `Also for <a href="${escapeHtml(latest.file)}">Windows</a>.`;
+  } else {
+    meta.innerHTML =
+      `Version ${escapeHtml(latest.version)} for 64-bit Windows 10 and 11. ${mb(latest.size)}, ${released}. Free.` +
+      (linuxBuild ? ` Also for <a href="${escapeHtml(linuxBuild.appimage)}">Linux</a>.` : '');
+  }
 }
 
 const list = document.getElementById('release-list');
@@ -52,9 +68,13 @@ for (const r of releases) {
   li.className = 'release';
   const isLatest = r === latest;
   const notes = (r.notes || []).map((n) => `<li>${escapeHtml(n)}</li>`).join('');
-  const action = r.file
-    ? `<a href="${escapeHtml(r.file)}" download>Download ${escapeHtml(r.version)}</a> <span class="gone">(${mb(r.size)})</span>`
-    : '<span class="gone">Installer not archived</span>';
+  const links = [];
+  if (r.file) links.push(`<a href="${escapeHtml(r.file)}">Windows</a> <span class="gone">(${mb(r.size)})</span>`);
+  if (r.linux) {
+    links.push(`<a href="${escapeHtml(r.linux.appimage)}">Linux AppImage</a>`);
+    links.push(`<a href="${escapeHtml(r.linux.deb)}">.deb</a>`);
+  }
+  const action = links.length ? links.join('<br>') : '<span class="gone">Installer not archived</span>';
   li.innerHTML = `
     <div><span class="ver">${escapeHtml(r.version)}</span>
       ${isLatest ? '<span class="latest">Newest</span>' : ''}
