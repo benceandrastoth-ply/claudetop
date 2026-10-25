@@ -313,12 +313,17 @@ function targetDisplay() {
 
 // A strip along the bottom of the chosen monitor, or across all of them during a panic run.
 // The renderer gets each monitor's floor so Claude stands on the right taskbar everywhere.
+// Under WSL, Linux sees the whole screen but the Windows taskbar is drawn on top of it,
+// so stand on the taskbar instead of behind it.
+const WSL_TASKBAR = isLinux && /microsoft/i.test(os.release()) ? 48 : 0;
+const floorOf = (d) => d.workArea.y + d.workArea.height - WSL_TASKBAR;
+
 function placeWindow() {
   const home = targetDisplay();
   const displays = spanAll || fullScreen ? screen.getAllDisplays() : [home];
   const left = Math.min(...displays.map((d) => d.workArea.x));
   const right = Math.max(...displays.map((d) => d.workArea.x + d.workArea.width));
-  const floors = displays.map((d) => d.workArea.y + d.workArea.height);
+  const floors = displays.map(floorOf);
   const bottom = Math.max(...floors);
   const top = fullScreen ? Math.min(...displays.map((d) => d.bounds.y)) : Math.min(...floors) - STRIP_HEIGHT;
   win.setBounds({ x: left, y: top, width: right - left, height: bottom - top });
@@ -326,7 +331,7 @@ function placeWindow() {
   const segment = (d) => ({
     left: d.workArea.x - left,
     right: d.workArea.x + d.workArea.width - left,
-    ground: bottom - (d.workArea.y + d.workArea.height),
+    ground: bottom - floorOf(d),
   });
   const all = screen.getAllDisplays();
   win.webContents.send('layout', {
@@ -359,7 +364,8 @@ function createWindow() {
   });
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true);
-  win.setIgnoreMouseEvents(true, { forward: true });
+  if (IS_WSL) win.setShape([{ x: 0, y: 0, width: 1, height: 1 }]); // until the page reports its shapes
+  else win.setIgnoreMouseEvents(true, { forward: true });
   placeWindow();
   win.loadFile(path.join(__dirname, 'index.html'));
   win.webContents.on('did-finish-load', () => {
@@ -603,11 +609,29 @@ ipcMain.on('set-ignore-mouse', (_e, ignore) => {
   if (win && !isLinux) win.setIgnoreMouseEvents(ignore, { forward: true });
 });
 
+// WSL (WSLg) hides click-through windows completely. There, the window is instead cut down to
+// the shapes the page reports (Claude, its bubble, flying hats, the TV...), so the rest of the
+// screen stays clickable.
+const IS_WSL = isLinux && /microsoft/i.test(os.release());
+let lastShape = '';
+ipcMain.on('shape', (_e, rects) => {
+  if (!win || !IS_WSL) return;
+  const shape = rects.map((r) => ({
+    x: Math.max(0, Math.floor(r.x)), y: Math.max(0, Math.floor(r.y)),
+    width: Math.ceil(r.w), height: Math.ceil(r.h),
+  })).filter((r) => r.width > 0 && r.height > 0);
+  const key = JSON.stringify(shape);
+  if (key === lastShape) return;
+  lastShape = key;
+  win.setShape(shape.length ? shape : [{ x: 0, y: 0, width: 1, height: 1 }]);
+});
+
 ipcMain.on('claude-rect', (_e, rect) => {
   claudeRect = rect;
 });
 
 function watchCursorLinux() {
+  if (IS_WSL) return; // the window shape does the job there
   setInterval(() => {
     if (!win || !claudeRect) return;
     const p = screen.getCursorScreenPoint();

@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('claudetop', {
   platform: process.platform,
   claudeRect: (rect) => ipcRenderer.send('claude-rect', rect),
+  shape: (rects) => ipcRenderer.send('shape', rects),
   onConfig: (fn) => ipcRenderer.on('config', (_e, cfg) => fn(cfg)),
   onSessions: (fn) => ipcRenderer.on('sessions', (_e, sessions) => fn(sessions)),
   onFocus: (fn) => ipcRenderer.on('focus', (_e, focus) => fn(focus)),

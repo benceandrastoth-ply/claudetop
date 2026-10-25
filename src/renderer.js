@@ -1246,6 +1246,15 @@ function tick(t) {
     lastRectSent = t;
     const r = el.getBoundingClientRect();
     window.claudetop.claudeRect({ x: window.screenX + r.left, y: window.screenY + r.top, w: r.width, h: r.height });
+    // Everything visible: Claude plus room above for the hat, bubble and hover info, and every
+    // effect (flying hats, the TV, holes, notes...).
+    const pad = 18;
+    const rects = [{ x: r.left - 120 - pad, y: r.top - 150, w: r.width + 240 + 2 * pad, h: r.height + 150 + pad }];
+    for (const node of fx.children) {
+      const b = node.getBoundingClientRect();
+      if (b.width && b.height) rects.push({ x: b.left - pad, y: b.top - pad, w: b.width + 2 * pad, h: b.height + 2 * pad });
+    }
+    window.claudetop.shape(rects);
   }
   requestAnimationFrame(tick);
 }

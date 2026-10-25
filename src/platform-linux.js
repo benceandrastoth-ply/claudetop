@@ -99,6 +99,12 @@ function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn 
     tick++;
     if (available.xprop) {
       const w = await activeWindow();
+      // No X11 window in front: a native Wayland app, or (under WSL) a Windows app. Say we
+      // can't tell, so "done" times out instead of waiting for a window we'll never see.
+      if (!w && lastFocus !== 'unknown') {
+        lastFocus = 'unknown';
+        onFocus({ pid: 0, name: '', title: '', available: false });
+      }
       if (w) {
         const key = `${w.pid}\t${w.name}\t${w.title}`;
         if (key !== lastFocus) {

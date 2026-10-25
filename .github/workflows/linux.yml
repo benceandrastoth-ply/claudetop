@@ -6,8 +6,6 @@ name: Linux build
 on:
   release:
     types: [published]
-  push:
-    branches: [linux] # test builds while the Linux port is in progress
   workflow_dispatch:
 
 permissions:
