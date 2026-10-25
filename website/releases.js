@@ -2,7 +2,7 @@ window.RELEASES = [
   {
     "version": "0.2.1",
     "date": "2026-10-25",
-    "file": "downloads/claudetop-Setup-0.2.1.exe",
+    "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.2.1/claudetop-Setup-0.2.1.exe",
     "size": 81972124,
     "sha256": "d41ddf53d5a5e1fdbe6cb6c2ebd825efa57cd6b9181c4822eac8d6270a180ecb",
     "notes": [
