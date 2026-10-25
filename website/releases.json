@@ -1,5 +1,19 @@
 [
   {
+    "version": "0.8.1",
+    "date": "2026-10-25",
+    "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.1/claudetop-Setup-0.8.1.exe",
+    "linux": {
+      "appimage": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.1/claudetop-0.8.1-x86_64.AppImage",
+      "deb": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.1/claudetop-0.8.1-amd64.deb"
+    },
+    "size": 82002249,
+    "sha256": "a5403e33a6a4dd4a747c7fa4cda7853699104b20e59758181ab5e8b4f31714bd",
+    "notes": [
+      "Redrawn cowboy hat, pirate hat (with bandana and eyepatch), astronaut helmet (with visor and suit) and ninja hood."
+    ]
+  },
+  {
     "version": "0.8.0",
     "date": "2026-10-25",
     "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.0/claudetop-Setup-0.8.0.exe",
