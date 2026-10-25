@@ -64,13 +64,16 @@ If the build fails with "Cannot create symbolic link", turn on Windows Developer
 
 ## Website
 
-`website/` is a static site: open `website/index.html` or upload the folder to any static host.
+Live at https://benceandrastoth-ply.github.io/claudetop/ (GitHub Pages; `website/` is published
+by `.github/workflows/pages.yml` on every push that changes it).
 
 - **Branding:** name, tagline, colours, your name and links all live in `website/brand.js`.
-- **Publishing a release:** `npm run dist`, then
-  `npm run release -- --notes "First change; Second change"`. That copies the installer to
-  `website/downloads/` and puts the version at the top of the release list (the newest one is what
-  the big download buttons point to).
+- **Publishing a release:**
+  1. Bump `version` in `package.json`, then `npm run dist`.
+  2. `npm run release -- --notes "First change; Second change"`: creates the GitHub Release with
+     the installer attached and puts the version at the top of `website/releases.json` (the newest
+     one is what the big download buttons point to).
+  3. Commit and push; the site updates by itself.
 
 ## Develop
 
