@@ -1,5 +1,26 @@
 [
   {
+    "version": "0.5.0",
+    "date": "2026-10-25",
+    "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.5.0/claudetop-Setup-0.5.0.exe",
+    "linux": {
+      "appimage": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.5.0/claudetop-0.5.0-x86_64.AppImage",
+      "deb": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.5.0/claudetop-0.5.0-amd64.deb"
+    },
+    "size": 81989823,
+    "sha256": "0a6405eab7c8ea9f26d3cc3afb2e49d9bd820bf98d7eb6ee70132bb379af0d08",
+    "notes": [
+      "Click the little Claude to jump straight to its Claude Code window.",
+      "Running several sessions? Each one gets its own little Claude, in its own colour.",
+      "Claude holds a magnifying glass, pencil, terminal or book depending on what Claude Code is doing. Long tasks get a coffee, very long ones a sleeping bag.",
+      "Game mode: Claude hides on the screen of a fullscreen game, and plays along on your other screen.",
+      "Three failed attempts in a row? Claude flips a table.",
+      "Seasonal surprises, some of them Hungarian.",
+      "Agent 47: disguises, and a mission rating after every job.",
+      "Fix: status updates could occasionally get lost on Windows."
+    ]
+  },
+  {
     "version": "0.4.0",
     "date": "2026-10-25",
     "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.4.0/claudetop-Setup-0.4.0.exe",
