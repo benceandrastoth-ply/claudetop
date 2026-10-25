@@ -55,7 +55,11 @@ if (!local) {
   if (exists) {
     execFileSync(gh, ['release', 'upload', tag, staged, '--clobber', '--repo', repo], { stdio: 'inherit' });
   } else {
-    execFileSync(gh, ['release', 'create', tag, staged, '--repo', repo, '--title', `claudetop ${version}`, '--notes', body], {
+    // The release's tag (and the Linux build) must be this code, so push it first and pin the
+    // tag to this exact commit; otherwise the tag lands on whatever main was before.
+    execFileSync('git', ['push'], { cwd: root, stdio: 'inherit' });
+    const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+    execFileSync(gh, ['release', 'create', tag, staged, '--repo', repo, '--target', head, '--title', `claudetop ${version}`, '--notes', body], {
       stdio: 'inherit',
     });
   }
