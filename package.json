@@ -3,7 +3,7 @@
   "productName": "claudetop",
   "version": "0.2.1",
   "description": "A little Claude that lives at the bottom of your screen and shows what Claude Code is up to",
-  "author": "claudetop",
+  "author": "potata",
   "repository": "github:benceandrastoth-ply/claudetop",
   "license": "MIT",
   "main": "src/main.js",

@@ -43,7 +43,7 @@ if (latest) {
     a.setAttribute('download', '');
   }
   document.getElementById('download-meta').textContent =
-    `Version ${latest.version} for Windows 10 and 11. ${mb(latest.size)}, released ${niceDate(latest.date)}. Free.`;
+    `Version ${latest.version} for 64-bit Windows 10 and 11. ${mb(latest.size)}, released ${niceDate(latest.date)}. Free.`;
 }
 
 const list = document.getElementById('release-list');

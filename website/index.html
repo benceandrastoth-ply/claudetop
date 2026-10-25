@@ -8,9 +8,7 @@
   <meta property="og:title" content="claudetop">
   <meta property="og:description" content="A tiny pixel Claude that lives on your Windows taskbar and shows what Claude Code is doing.">
   <link rel="icon" href="favicon.ico">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="fonts/fonts.css">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="sprite.css">
   <script src="brand.js"></script>
@@ -147,7 +145,7 @@
         <ol class="steps">
           <li>
             <h3>Download the installer</h3>
-            <p>One file. You need Windows 10 or 11 and Claude Code.</p>
+            <p>One file. You need 64-bit Windows 10 or 11 and Claude Code.</p>
           </li>
           <li>
             <h3>Run it and keep "Connect to Claude Code" ticked</h3>
@@ -171,15 +169,19 @@
         </details>
         <details>
           <summary>What does it read on my computer?</summary>
-          <p>Claude Code's status (through hooks in <code>~/.claude/settings.json</code>), the title of the window in front, and what your media player says is playing. Nothing leaves your computer.</p>
+          <p>Claude Code's status (through hooks in <code>~/.claude/settings.json</code>), the title of the window in front, and what your media player says is playing. It never sends anything anywhere: the app makes no internet connections. The <a href="privacy.html">privacy policy</a> has the full list.</p>
+        </details>
+        <details>
+          <summary>How do I check my download is genuine?</summary>
+          <p>Each release below lists the installer's SHA-256 fingerprint. In PowerShell, run <code>Get-FileHash .\claudetop-Setup-0.2.1.exe</code> in your Downloads folder and check that the hash matches.</p>
         </details>
         <details>
           <summary>Does it work with the Claude app or claude.ai?</summary>
-          <p>It works with Claude Code, including Claude Code inside the desktop app. Regular chat doesn't report when it's working, so there's nothing to show.</p>
+          <p>It's made for Claude Code in a terminal or editor. Claude Code inside the Claude desktop app uses the same hooks, so it should work there too, but that hasn't been tested yet. Regular chat doesn't report when it's working, so there's nothing to show.</p>
         </details>
         <details>
           <summary>How do I remove it?</summary>
-          <p>Uninstall claudetop from Windows Settings. That also removes its hooks from Claude Code.</p>
+          <p>Uninstall claudetop from Windows Settings. The uninstaller also removes its hooks from Claude Code.</p>
         </details>
       </div>
     </section>
@@ -196,7 +198,7 @@
   <footer class="foot">
     <div class="wrap">
       <p class="made" id="made"></p>
-      <p class="links" id="links"></p>
+      <p class="links" id="links"><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></p>
       <p class="legal">
         An unofficial fan project, not affiliated with or endorsed by Anthropic.
         Claude and Claude Code are trademarks of Anthropic.

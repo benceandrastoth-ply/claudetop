@@ -7,7 +7,7 @@ window.BRAND = {
     'waves when Claude needs you, and celebrates when the job is done.',
 
   // Shown in the footer as "Made by …". Leave empty to hide.
-  maker: '',
+  maker: 'potata',
   // Any of these that are filled in appear in the footer.
   links: {
     github: 'https://github.com/benceandrastoth-ply/claudetop',
