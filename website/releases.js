@@ -1,5 +1,20 @@
 window.RELEASES = [
   {
+    "version": "0.3.0",
+    "date": "2026-10-25",
+    "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.3.0/claudetop-Setup-0.3.0.exe",
+    "linux": {
+      "appimage": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.3.0/claudetop-0.3.0-x86_64.AppImage",
+      "deb": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.3.0/claudetop-0.3.0-amd64.deb"
+    },
+    "size": 81977069,
+    "sha256": "81646fe03adc3bd408e853d00d80cf80d5f2b20c9a668bfc4626bed7c075aca2",
+    "notes": [
+      "Now on Linux: AppImage and .deb.",
+      "Runs under WSL too."
+    ]
+  },
+  {
     "version": "0.2.1",
     "date": "2026-10-25",
     "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.2.1/claudetop-Setup-0.2.1.exe",
