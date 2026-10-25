@@ -1,5 +1,21 @@
 window.RELEASES = [
   {
+    "version": "0.4.0",
+    "date": "2026-10-25",
+    "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.4.0/claudetop-Setup-0.4.0.exe",
+    "linux": {
+      "appimage": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.4.0/claudetop-0.4.0-x86_64.AppImage",
+      "deb": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.4.0/claudetop-0.4.0-amd64.deb"
+    },
+    "size": 81980229,
+    "sha256": "e0831f4404f5992f8cc65dd6e1f13f8ef36df174881f7a9a15699fc3a76e0a6b",
+    "notes": [
+      "The propeller lock-in now ends in a proper crash: Claude tumbles down, lands flat, and the hat flutters down onto its head.",
+      "Open ChatGPT, Gemini or another AI and Claude cries for a few seconds (right-click menu to turn off).",
+      "New state: Tokens are back. When your usage limit resets, Claude lights up again. Hover while out of credits to see when."
+    ]
+  },
+  {
     "version": "0.3.0",
     "date": "2026-10-25",
     "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.3.0/claudetop-Setup-0.3.0.exe",
