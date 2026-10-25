@@ -2138,7 +2138,7 @@ const SOUNDS = {
 };
 
 function play(name) {
-  if (config.sounds === false || quiet()) return;
+  if (config.sounds === false || quiet() || Date.now() < (config.soundsSnoozedUntil || 0)) return;
   const sound = SOUNDS[isAgent() && SOUNDS[`${name}47`] ? `${name}47` : name];
   if (!sound) return;
   try {
@@ -2361,6 +2361,123 @@ async function fling(vx, vy) {
   await wait(1500);
   stars.remove();
   walker.pauseUntil = performance.now() + 1500;
+  puppet = false;
+}
+
+
+// ---------- little things ----------
+// Clicks: one opens Claude Code, two (or more, quickly) is a pet, ten in a row is too many.
+let clickCount = 0;
+let clickTimer = null;
+let rapidClicks = 0;
+let lastClickAt = 0;
+
+function registerClick() {
+  const now = performance.now();
+  rapidClicks = now - lastClickAt < 600 ? rapidClicks + 1 : 1;
+  lastClickAt = now;
+  if (rapidClicks >= 10) {
+    rapidClicks = 0;
+    clickCount = 0;
+    clearTimeout(clickTimer);
+    annoyed();
+    return;
+  }
+  clickCount++;
+  clearTimeout(clickTimer);
+  clickTimer = setTimeout(() => {
+    const n = clickCount;
+    clickCount = 0;
+    if (n === 1) jumpToLead();
+    else pet();
+  }, 280);
+}
+
+function pet() {
+  if (puppet) return;
+  el.classList.remove('petted');
+  void el.offsetWidth;
+  el.classList.add('petted');
+  setTimeout(() => el.classList.remove('petted'), 900);
+  const h = headPoint();
+  const heart = fxNode('heart');
+  heart.textContent = '❤';
+  heart.style.left = `${h.x + (Math.random() - 0.5) * 30}px`;
+  heart.style.top = `${h.y - 10}px`;
+  setTimeout(() => heart.remove(), 1200);
+}
+
+async function annoyed() {
+  if (puppet) return;
+  el.classList.add('react-angry');
+  say(isAgent() ? 'Touch me again. I dare you.' : pick(['ok, ok, I’m here!', 'STOP CLICKING', 'what?! WHAT?!']), 2200);
+  await wait(1600);
+  el.classList.remove('react-angry');
+}
+
+// Scroll over Claude to change hats.
+let lastWheel = 0;
+el.addEventListener('wheel', (e) => {
+  const now = performance.now();
+  if (now - lastWheel < 350 || puppet) return;
+  lastWheel = now;
+  window.claudetop.cycleHat(Math.sign(e.deltaY) || 1);
+}, { passive: true });
+
+// Remember where Claude was standing, so the next start begins there (walk mode).
+let savedX = null;
+function rememberSpot() {
+  if (config.mode !== 'walk' || spanning || puppet || walker.x == null) return;
+  const x = walker.x - home().left;
+  if (savedX !== null && Math.abs(x - savedX) < 20) return;
+  savedX = x;
+  window.claudetop.setLastX(x);
+}
+setInterval(rememberSpot, 10000);
+
+// Every few minutes of rest, Claude does something to pass the time.
+let nextIdle = Date.now() + 3 * 60000;
+async function idleMoment(now = Date.now()) {
+  if (now < nextIdle) return;
+  nextIdle = now + (3 + Math.random() * 4) * 60000;
+  const busy = puppet || panicking || scene || crying || dancing || tv || gaming || dragging || quiet();
+  if (state !== 'resting' || busy || hiddenForGame) return;
+  const moves = ['newspaper', 'juggle', 'snore'];
+  if (config.hat === 'cowboy') moves.push('lasso', 'lasso');
+  const move = pick(moves);
+  puppet = true;
+  if (move === 'newspaper') {
+    el.classList.add('reading');
+    say(pick(['hm.', 'interesting…', 'huh.', 'no way.']), 2000);
+    await wait(6000);
+    el.classList.remove('reading');
+  } else if (move === 'juggle') {
+    el.classList.add('juggling');
+    const balls = fxNode('juggle', '<i></i><i></i><i></i>');
+    const place = () => {
+      const h = headPoint();
+      balls.style.left = `${h.x}px`;
+      balls.style.top = `${h.y - 20}px`;
+    };
+    place();
+    await wait(5000);
+    balls.remove();
+    el.classList.remove('juggling');
+  } else if (move === 'snore') {
+    el.classList.add('snore');
+    say('*SNOOOORE*', 2600);
+    await wait(3000);
+    el.classList.remove('snore');
+  } else if (move === 'lasso') {
+    const over = fxNode('lasso-overhead');
+    const h = headPoint();
+    over.style.left = `${h.x + walker.dir * 12}px`;
+    over.style.top = `${h.y - 26}px`;
+    el.classList.add('throwing');
+    await wait(2500);
+    el.classList.remove('throwing');
+    over.remove();
+  }
   puppet = false;
 }
 
@@ -2682,7 +2799,7 @@ window.addEventListener('mouseup', () => {
   dragging = null;
   el.classList.remove('dragging', 'held');
   if (click) {
-    jumpToLead();
+    registerClick();
     if (!hovering) window.claudetop.setIgnoreMouse(true);
     return;
   }
@@ -2780,7 +2897,9 @@ async function maybeEnter() {
   entered = true;
   el.classList.add('entered');
   const h = home();
-  walker.x = h.left + (config.mode === 'fixed' && config.fixedX != null ? config.fixedX : (h.right - h.left - WIDTH) / 2);
+  const lastX = config.lastX != null && config.lastX >= 0 && config.lastX <= h.right - h.left - WIDTH ? config.lastX : null;
+  walker.x = h.left + (config.mode === 'fixed' && config.fixedX != null ? config.fixedX : lastX ?? (h.right - h.left - WIDTH) / 2);
+  savedX = walker.x - h.left;
   puppet = true;
   el.classList.add('falling');
   const top = window.innerHeight + 30;
@@ -2826,6 +2945,7 @@ setInterval(() => {
   countWork();
   nightAndBirthdayTick();
   hitmanTick();
+  idleMoment();
   showAchievements();
   if (hovering) renderInfo();
 }, 500);

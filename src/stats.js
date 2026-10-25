@@ -53,6 +53,7 @@ function createStats(file) {
     const day = (data.days[today()] = data.days[today()] || {});
     day[key] = (day[key] || 0) + amount;
     data.totals[key] = (data.totals[key] || 0) + amount;
+    if (key === 'tasks' && day.tasks > (data.totals.bestTasks || 0)) data.totals.bestTasks = day.tasks; // the record day
     const t = new Proxy(data.totals, { get: (o, k) => o[k] || 0 });
     const unlocked = [];
     for (const [id, name, description, check] of ACHIEVEMENTS) {
@@ -79,7 +80,10 @@ function createStats(file) {
     }));
   }
 
-  return { add, todayStats, achievements };
+  // The most tasks finished in a single day.
+  const record = () => data.totals.bestTasks || 0;
+
+  return { add, todayStats, achievements, record };
 }
 
 // "2h 10m", "35m", "under a minute"

@@ -65,6 +65,9 @@ the session or its title looks like a Claude Code title (`✳ topic`, `◑ topic
 - **Birthday**: set yours in the right-click menu for a party hat, confetti and wishes on the day.
 - **Throw Claude**: drag it up to lift it, let go to drop it, fling it to watch it bounce off the
   edges.
+- **Little things**: double-click to pet Claude (ten quick clicks is too many), scroll over it to
+  change hats, "Snooze sounds for an hour" in the menu, the record day under the daily recap, and
+  every few minutes of rest Claude reads the paper, juggles or snores. It starts where it last stood.
 - **Hitman**: while a Hitman game runs, 47 cheers you on every so often; when it closes he bows.
 - **Agent 47 extras**: disguises (a chef while editing, a mechanic while tests fail, and a rare
   flamingo), and a mission rating after each job: Silent Assassin if it needed no permission prompts.

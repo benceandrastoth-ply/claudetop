@@ -1418,3 +1418,75 @@ svg .ninja .nj-plate { fill: #b7bec7; }
 svg .ninja .nj-mark { fill: #4a4f57; }
 #claude.hat-ninja svg .arm, #claude.hat-ninja svg .legs-a rect, #claude.hat-ninja svg .legs-b rect { fill: #2a2b33; }
 #claude.hat-astronaut svg .arm, #claude.hat-astronaut svg .legs-a rect, #claude.hat-astronaut svg .legs-b rect { fill: #f3f5f8; }
+
+/* ---------- little things ---------- */
+#claude.petted .bob { animation: wiggle 0.9s ease-in-out; }
+@keyframes wiggle {
+  0%, 100% { transform: none; }
+  20% { transform: rotate(-8deg) scaleY(0.94); }
+  40% { transform: rotate(8deg) translateY(-4px); }
+  60% { transform: rotate(-6deg); }
+  80% { transform: rotate(4deg) translateY(-2px); }
+}
+#claude.petted .eyes-open, #claude.petted .eyes-closed, #claude.petted .eyes-panic { display: none; }
+#claude.petted .eyes-happy { display: inline; }
+#claude.petted .blush { display: inline; }
+.heart {
+  position: absolute;
+  color: #ff5f8a;
+  font: 700 20px "Segoe UI Symbol", sans-serif;
+  -webkit-text-stroke: 0.6px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  animation: heart 1.2s ease-out forwards;
+}
+@keyframes heart {
+  from { transform: translate(-50%, 0) scale(0.5); opacity: 0; }
+  20% { opacity: 1; transform: translate(-50%, -8px) scale(1.15); }
+  to { transform: translate(-50%, -48px) scale(0.9); opacity: 0; }
+}
+.paper { display: none; }
+#claude.reading .paper { display: inline; }
+#claude.reading .eyes-closed { display: none; }
+#claude.reading .eyes-open { display: inline; transform: translateY(0.6px); }
+#claude.reading .zzz { display: none; }
+#claude.reading .arm { transform: translateY(1px); }
+svg .paper .pp { fill: #f2efe6; }
+svg .paper .pp-head { fill: #2b2b33; }
+svg .paper .pp-line { fill: #a9a59a; }
+svg .paper .pp-pic { fill: #c9c4b6; }
+svg .paper .pp-fold { fill: #d7d2c4; }
+#claude.juggling .eyes-closed { display: none; }
+#claude.juggling .eyes-open { display: inline; transform: translateY(-0.8px); }
+#claude.juggling .zzz { display: none; }
+#claude.juggling .arm-l { animation: tap 0.35s steps(1) infinite; }
+#claude.juggling .arm-r { animation: tap 0.35s steps(1) infinite 0.17s; }
+.juggle { position: absolute; width: 0; height: 0; pointer-events: none; }
+.juggle i {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px;
+  border-radius: 50%;
+  animation: juggle 1.05s linear infinite;
+}
+.juggle i:nth-child(1) { background: #ff5f5f; }
+.juggle i:nth-child(2) { background: #ffd23f; animation-delay: -0.35s; }
+.juggle i:nth-child(3) { background: #36d6ff; animation-delay: -0.7s; }
+@keyframes juggle {
+  0% { transform: translate(-22px, 8px); }
+  25% { transform: translate(-10px, -34px); }
+  50% { transform: translate(22px, 8px); }
+  75% { transform: translate(10px, -34px); }
+  100% { transform: translate(-22px, 8px); }
+}
+#claude.snore .bob { animation: snore 1.4s ease-in-out 2; }
+@keyframes snore {
+  0%, 100% { transform: translateY(9px) scaleY(1); }
+  50% { transform: translateY(6px) scaleY(1.14) scaleX(1.05); }
+}
+#claude.snore .zzz span { font-size: 22px; }
+/* hats with a life of their own */
+svg .wizard .wz-star { animation: twinkle 1.6s ease-in-out infinite; }
+svg .wizard .wz-star:nth-of-type(2n) { animation-delay: 0.8s; }
+@keyframes twinkle { 50% { opacity: 0.25; } }
+#claude.waiting svg .astronaut .as-light { animation-duration: 0.3s; }

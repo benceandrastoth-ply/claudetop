@@ -92,6 +92,8 @@ let config = {
   dnd: false, // do not disturb, switched on by hand
   dndCalls: true, // do not disturb while an app uses the microphone (calls, streams)
   birthday: null, // "MM-DD"
+  soundsSnoozedUntil: 0, // "Snooze sounds for an hour"
+  lastX: null, // where Claude was standing (walk mode), so it starts there next time
   gameMode: true, // hide on a fullscreen game's screen, play along on the others
   seasonal: true, // snow in winter, a pumpkin at Halloween...
   setupDone: false, // Linux: the first-launch question has been asked (Windows asks in the installer)
@@ -531,6 +533,7 @@ function menuTemplate() {
   return [
     { label: 'claudetop', enabled: false },
     { label: recapText(), enabled: false },
+    ...(stats.record() ? [{ label: `Record: ${stats.record()} task${stats.record() === 1 ? '' : 's'} in a day`, enabled: false }] : []),
     {
       label: `Achievements (${stats.achievements().filter((a) => a.unlocked).length}/${stats.achievements().length})`,
       submenu: stats.achievements().map((a) => ({
@@ -616,6 +619,7 @@ function menuTemplate() {
       checked: config.sounds,
       click: (item) => setFlag('sounds', item.checked),
     },
+    snoozeItem(),
     {
       label: 'Do not disturb',
       type: 'checkbox',
@@ -730,6 +734,37 @@ function birthdayMenu() {
     })),
   ];
 }
+
+// "Snooze sounds for an hour", or how long they're still snoozed for.
+let snoozeTimer = null;
+function snoozeItem() {
+  const until = config.soundsSnoozedUntil || 0;
+  if (until > Date.now()) {
+    const time = new Date(until).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return { label: `Sounds snoozed until ${time} (wake them)`, click: () => snoozeSounds(0) };
+  }
+  return { label: 'Snooze sounds for an hour', enabled: config.sounds !== false, click: () => snoozeSounds(60 * 60 * 1000) };
+}
+
+function snoozeSounds(ms) {
+  config.soundsSnoozedUntil = ms ? Date.now() + ms : 0;
+  saveConfig();
+  pushConfig();
+  clearTimeout(snoozeTimer);
+  if (ms) snoozeTimer = setTimeout(rebuildMenus, ms + 1000); // the tray menu changes back by itself
+}
+
+// Scroll over Claude to try on the next or previous hat.
+const HAT_ORDER = ['none', 'hard', 'propeller', 'miner', 'cowboy', 'wizard', 'pirate', 'astronaut', 'ninja', 'crown', 'chef', 'agent47'];
+ipcMain.on('cycle-hat', (_e, step) => {
+  const i = Math.max(0, HAT_ORDER.indexOf(config.hat));
+  setFlag('hat', HAT_ORDER[(i + (step > 0 ? 1 : -1) + HAT_ORDER.length) % HAT_ORDER.length]);
+});
+
+ipcMain.on('set-last-x', (_e, x) => {
+  config.lastX = Math.round(x);
+  saveConfig();
+});
 
 function rebuildMenus() {
   if (tray) tray.setContextMenu(Menu.buildFromTemplate(menuTemplate()));
@@ -915,6 +950,8 @@ if (!app.requestSingleInstanceLock()) {
       try { hooksSetup.refreshHooks(hookCommand()); } catch {}
     }
     createWindow();
+    const snoozeLeft = (config.soundsSnoozedUntil || 0) - Date.now();
+    if (snoozeLeft > 0) snoozeTimer = setTimeout(rebuildMenus, snoozeLeft + 1000);
     watchSessions();
     watchFocus();
     tray = new Tray(trayIcon());

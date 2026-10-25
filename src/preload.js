@@ -21,4 +21,6 @@ contextBridge.exposeInMainWorld('claudetop', {
   onGame: (fn) => ipcRenderer.on('game', (_e, game) => fn(game)),
   onAchievement: (fn) => ipcRenderer.on('achievement', (_e, a) => fn(a)),
   stat: (key, amount) => ipcRenderer.send('stat', key, amount),
+  cycleHat: (step) => ipcRenderer.send('cycle-hat', step),
+  setLastX: (x) => ipcRenderer.send('set-last-x', x),
 });
