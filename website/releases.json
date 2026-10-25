@@ -1,5 +1,20 @@
 [
   {
+    "version": "0.6.0",
+    "date": "2026-10-25",
+    "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.6.0/claudetop-Setup-0.6.0.exe",
+    "linux": {
+      "appimage": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.6.0/claudetop-0.6.0-x86_64.AppImage",
+      "deb": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.6.0/claudetop-0.6.0-amd64.deb"
+    },
+    "size": 81990493,
+    "sha256": "d4b9aa25ceee8f16a5d9f524c5d0a3bebce06e053b5a4dffbf1818b24dfa46b6",
+    "notes": [
+      "Start any Hitman game and Claude suits up as Agent 47. Quit it and the usual hat comes back (right-click menu to turn off).",
+      "Agent 47 now joins in on seasonal hats too."
+    ]
+  },
+  {
     "version": "0.5.0",
     "date": "2026-10-25",
     "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.5.0/claudetop-Setup-0.5.0.exe",
