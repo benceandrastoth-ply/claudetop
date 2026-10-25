@@ -54,11 +54,11 @@ if (latest) {
     meta.innerHTML =
       `Version ${escapeHtml(latest.version)} for 64-bit Linux, ${released}. Free. ` +
       `Prefer a package? <a href="${escapeHtml(linuxBuild.deb)}">.deb for Ubuntu and Debian</a>. ` +
-      `Also for <a href="${escapeHtml(latest.file)}">Windows</a>.`;
+      `New to it? Read the <a href="linux.html">Linux guide</a>. Also for <a href="${escapeHtml(latest.file)}">Windows</a>.`;
   } else {
     meta.innerHTML =
       `Version ${escapeHtml(latest.version)} for 64-bit Windows 10 and 11. ${mb(latest.size)}, ${released}. Free.` +
-      (linuxBuild ? ` Also for <a href="${escapeHtml(linuxBuild.appimage)}">Linux</a>.` : '');
+      (linuxBuild ? ` Also for <a href="linux.html">Linux</a>.` : '');
   }
 }
 

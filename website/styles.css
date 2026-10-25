@@ -302,6 +302,16 @@ body.agent-mode {
 .doc li { margin-bottom: 0.7em; }
 .doc a { color: var(--accent); }
 .doc .updated { color: var(--muted); }
+.doc pre {
+  margin: 0 0 1.2em;
+  padding: 14px 16px;
+  background: var(--taskbar);
+  border-left: 3px solid var(--accent);
+  overflow-x: auto;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.doc pre code { background: none; padding: 0; }
 
 .foot { padding: 40px 0 56px; background: var(--taskbar); border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
 .foot p { margin: 0 0 6px; }

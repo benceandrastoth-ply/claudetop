@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>claudetop on Linux</title>
+  <meta name="description" content="How to install and run claudetop on Linux: AppImage or .deb, first launch, and what works on X11 and Wayland.">
+  <link rel="icon" href="favicon.ico">
+  <link rel="stylesheet" href="fonts/fonts.css">
+  <link rel="stylesheet" href="styles.css">
+  <script src="releases.js"></script>
+</head>
+<body class="doc-page">
+  <nav class="topnav" aria-label="Main">
+    <a class="wordmark" href="./">claudetop</a>
+    <ul><li><a href="./">Back to the site</a></li></ul>
+  </nav>
+
+  <main class="doc wrap narrow">
+    <h1>claudetop on Linux</h1>
+    <p class="updated" id="linux-version">For 64-bit (x86-64) Linux.</p>
+
+    <p>There are two downloads. They're the same app; pick whichever suits your system.</p>
+    <ul>
+      <li><b>AppImage</b> runs on almost any distribution, with nothing to install. <a id="dl-appimage" href="#">Download the AppImage</a></li>
+      <li><b>.deb</b> is a regular package for Ubuntu, Debian, Linux Mint and Pop!_OS. It adds claudetop to your app menu and pulls in the extra tools for you. <a id="dl-deb" href="#">Download the .deb</a></li>
+    </ul>
+
+    <h2>Install the .deb</h2>
+    <p>In a terminal, in the folder you downloaded it to:</p>
+    <pre><code id="deb-cmd">sudo apt update
+sudo apt install ./claudetop-VERSION-amd64.deb</code></pre>
+    <p>Then start claudetop from your app menu, or run <code>claudetop</code>.</p>
+
+    <h2>Run the AppImage</h2>
+    <p>Make it executable once, then run it:</p>
+    <pre><code id="appimage-cmd">chmod +x claudetop-VERSION-x86_64.AppImage
+./claudetop-VERSION-x86_64.AppImage</code></pre>
+    <p>If it complains about FUSE, install it: <code>sudo apt install libfuse2t64</code> on Ubuntu 24.04 and newer, <code>libfuse2</code> on older Ubuntu and Debian.</p>
+
+    <h2>The first launch</h2>
+    <p>claudetop asks whether to connect to Claude Code. Say yes: it adds a few hooks to <code>~/.claude/settings.json</code> so it can see what Claude Code is doing. There's also a box to turn Claude into Agent 47 right away. Everything else is in the right-click menu on the little Claude, or on its tray icon.</p>
+
+    <h2>Extra tools for every feature</h2>
+    <p>claudetop runs without these, but some features need them. The .deb installs them for you; with the AppImage, install them yourself.</p>
+    <ul>
+      <li><b>xprop</b> lets claudetop see which window you're in, so it knows when you've looked at Claude Code.</li>
+      <li><b>xdotool</b> lets Lock-in mode close tabs.</li>
+      <li><b>playerctl</b> lets Claude dance to your music and watch videos with you.</li>
+    </ul>
+    <pre><code># Ubuntu, Debian, Mint
+sudo apt install x11-utils xdotool playerctl
+# Fedora
+sudo dnf install xprop xdotool playerctl
+# Arch
+sudo pacman -S xorg-xprop xdotool playerctl</code></pre>
+
+    <h2>X11 and Wayland</h2>
+    <p>claudetop works best in an X11 session. On Wayland (the default on recent Ubuntu and Fedora) it still runs, but Wayland doesn't let one app see another app's windows. claudetop can only see apps that run through XWayland, so:</p>
+    <ul>
+      <li>It may not notice when you switch to your terminal. When work is done, Claude celebrates for a few seconds and then rests, instead of waiting for you to look.</li>
+      <li>Lock-in mode only works in browsers that run through XWayland.</li>
+    </ul>
+    <p>Everything else, including the hats, panic mode, dancing and the TV, works the same.</p>
+
+    <h2>Start at login</h2>
+    <p>Right-click the little Claude and tick <b>Start at login</b>. That adds it to <code>~/.config/autostart</code>.</p>
+
+    <h2>Uninstall</h2>
+    <p>First right-click the little Claude and untick <b>Connected to Claude Code</b>, so its hooks are removed. Then remove the app: <code>sudo apt remove claudetop</code> for the .deb, or just delete the AppImage. To remove its last traces, also delete <code>~/.claude/claudetop</code> and <code>~/.config/claudetop</code>.</p>
+
+    <h2>Something not working?</h2>
+    <p>Open an issue on <a href="https://github.com/benceandrastoth-ply/claudetop/issues">GitHub</a> and mention your distribution and whether you're on X11 or Wayland (<code>echo $XDG_SESSION_TYPE</code> tells you).</p>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      <p class="links"><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="https://github.com/benceandrastoth-ply/claudetop">GitHub</a></p>
+      <p class="legal">An unofficial fan project, not affiliated with or endorsed by Anthropic. Claude and Claude Code are trademarks of Anthropic.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Fill in the newest Linux build's links and file names.
+    const r = (window.RELEASES || []).find((x) => x.linux);
+    if (r) {
+      document.getElementById('linux-version').textContent = `Version ${r.version}, for 64-bit (x86-64) Linux.`;
+      document.getElementById('dl-appimage').href = r.linux.appimage;
+      document.getElementById('dl-deb').href = r.linux.deb;
+      for (const id of ['deb-cmd', 'appimage-cmd']) {
+        const el = document.getElementById(id);
+        el.textContent = el.textContent.replaceAll('VERSION', r.version);
+      }
+    }
+  </script>
+</body>
+</html>

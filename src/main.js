@@ -674,6 +674,9 @@ if (!app.requestSingleInstanceLock()) {
 } else {
   app.whenReady().then(() => {
     loadConfig();
+    if (app.isPackaged) {
+      try { hooksSetup.refreshHooks(hookCommand()); } catch {}
+    }
     createWindow();
     watchSessions();
     watchFocus();
