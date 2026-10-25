@@ -1,5 +1,24 @@
 window.RELEASES = [
   {
+    "version": "0.7.0",
+    "date": "2026-10-25",
+    "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.7.0/claudetop-Setup-0.7.0.exe",
+    "linux": {
+      "appimage": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.7.0/claudetop-0.7.0-x86_64.AppImage",
+      "deb": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.7.0/claudetop-0.7.0-amd64.deb"
+    },
+    "size": 81996262,
+    "sha256": "78ead2b570b4699bdd3c31dbdc9f5309a3a26fee9e62625ade5d8f0bd2e52355",
+    "notes": [
+      "Sounds: a jingle when work is done, a ping when Claude Code needs you.",
+      "Do not disturb: switch it on yourself, or it turns on by itself while you're on a call.",
+      "Daily recap in the tray, and achievements (some of them hidden).",
+      "Late at night Claude wears a nightcap and tells you to go to bed. Set your birthday for a party.",
+      "You can pick Claude up, drop it, or throw it.",
+      "Hitman: 47 cheers you on while you play and takes a bow when you quit."
+    ]
+  },
+  {
     "version": "0.6.0",
     "date": "2026-10-25",
     "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.6.0/claudetop-Setup-0.6.0.exe",
