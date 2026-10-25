@@ -10,7 +10,7 @@ window.BRAND = {
   maker: '',
   // Any of these that are filled in appear in the footer.
   links: {
-    github: '',
+    github: 'https://github.com/benceandrastoth-ply/claudetop',
     discord: '',
     x: '',
   },
