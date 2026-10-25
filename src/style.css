@@ -1112,3 +1112,5 @@ svg .cockade .ck-r { fill: #d32f2f; }
 @keyframes buddyin { from { transform: translateY(-40px); opacity: 0; } }
 .buddy.done .bob { animation: bounce 1.2s ease-in-out infinite; }
 #claude.jumped .bob { animation: hop 0.5s ease-out 1; }
+/* a disguise brings its own headgear */
+#claude[class*="disguise-"] .hat.pumpkin, #claude[class*="disguise-"] .hat.santa, #claude[class*="disguise-"] .hat.party { display: none; }

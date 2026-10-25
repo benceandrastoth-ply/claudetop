@@ -1430,7 +1430,7 @@ let fireworksTimer = null;
 
 function applySeason() {
   season = config.seasonal === false ? { hat: null, snow: false, fireworks: false, cockade: false } : seasonFor(seasonDate());
-  seasonHat = config.hat === 'none' ? season.hat : null; // your own hat wins
+  seasonHat = ['none', 'agent47'].includes(config.hat) ? season.hat : null; // a hat of your own wins (47 has none)
   for (const k of ['pumpkin', 'santa', 'party']) el.classList.toggle(`season-${k}`, k === seasonHat);
   el.classList.toggle('wear-cockade', season.cockade);
   updateHatClasses();
@@ -1979,6 +1979,7 @@ window.claudetop.onConfig((cfg) => {
   const enteringFixed = configLoaded && cfg.mode === 'fixed' && config.mode !== 'fixed';
   const oldHat = config.hat;
   const hatChanged = configLoaded && cfg.hat !== config.hat;
+  const wasHitman = !!config.hitmanActive;
   const movedScreen = configLoaded && cfg.displayId !== config.displayId;
   configLoaded = true;
   config = cfg;
@@ -1994,6 +1995,17 @@ window.claudetop.onConfig((cfg) => {
   el.classList.toggle('hat-agent47', config.hat === 'agent47');
   if (hatChanged) renderBubble(); // Agent 47 has his own lines
   if (hatChanged && !puppet && entered) swapHat(oldHat);
+  if (hatChanged && entered) {
+    const line = cfg.hitmanActive ? pick(['Suit up.', 'Time to work.', 'Hitman? Say no more.']) : wasHitman ? pick(['Good game.', 'Back to the day job.']) : null;
+    if (line) {
+      gameLine = line;
+      renderBubble();
+      setTimeout(() => {
+        if (gameLine === line) gameLine = null;
+        renderBubble();
+      }, 2600);
+    }
+  }
   // A panic run or relief walk already ends on the new home screen by itself.
   if (movedScreen && !panicking && !scene && !puppet) {
     pendingMove = true;

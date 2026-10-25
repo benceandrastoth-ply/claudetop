@@ -92,6 +92,9 @@ try {
   $media = Await ($mgrType::RequestAsync()) $mgrType
 } catch { $media = $null }
 $lastMedia = $null
+$lastHitman = $null
+# Every Hitman game's process name, Codename 47 to World of Assassination.
+$hitmanNames = 'HITMAN', 'HITMAN2', 'HITMAN3', 'HMA', 'HitmanBloodMoney', 'HitmanContracts'
 $tick = 0
 
 $lockIn = '__LOCKIN__' -eq '1'
@@ -164,6 +167,15 @@ while ($true) {
   }
 
   $tick++
+  # "HITMAN`t<0|1>" when a Hitman game starts or quits (checked every 5s).
+  if ($tick % 20 -eq 1) {
+    $h = [bool](Get-Process -Name $hitmanNames -ErrorAction SilentlyContinue)
+    if ($h -ne $lastHitman) {
+      [Console]::Out.WriteLine("HITMAN`t$([int]$h)")
+      [Console]::Out.Flush()
+      $lastHitman = $h
+    }
+  }
   if ($media -and $tick % 4 -eq 0) {
     $m = "MEDIA`t0"
     try {

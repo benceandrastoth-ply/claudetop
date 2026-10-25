@@ -86,7 +86,25 @@ async function nowPlaying() {
 }
 
 // Same job as focus-watch.ps1: report the window in front, what's playing, and NSFW tabs.
-function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn }) {
+// Is a Hitman game running (natively or through Proton/Wine)?
+const HITMAN_RE = /^(hitman\d?|hma|hitmanbloodmoney|hitmancontracts)(\.exe)?$/i;
+function hitmanRunning() {
+  try {
+    return fs.readdirSync('/proc').some((pid) => {
+      if (!/^\d+$/.test(pid)) return false;
+      try {
+        return HITMAN_RE.test(fs.readFileSync(`/proc/${pid}/comm`, 'utf8').trim());
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    return false;
+  }
+}
+
+function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn, onHitman = () => {} }) {
+  let lastHitman = null;
   const blockRe = new RegExp(blocklist, 'i');
   let stopped = false;
   let lastFocus = '';
@@ -122,6 +140,13 @@ function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn 
           cooldownUntil = Date.now() + 12000; // claudetop is busy with its animation
           onLockIn(w.id, available.xwininfo ? await windowRect(w.id) : '', '');
         }
+      }
+    }
+    if (tick % 20 === 1) {
+      const h = hitmanRunning();
+      if (h !== lastHitman) {
+        lastHitman = h;
+        onHitman(h);
       }
     }
     if (tick % 4 === 0) {

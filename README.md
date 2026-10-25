@@ -43,6 +43,8 @@ the session or its title looks like a Claude Code title (`✳ topic`, `◑ topic
 - **Seasonal surprises**: snow in winter, a pumpkin for Halloween week, a Santa hat at Christmas,
   party hat and fireworks at New Year, and a cockade on Hungary's national days (with fireworks on
   20 August). Only when Claude has no hat of its own.
+- **Become Agent 47 while Hitman runs**: start any Hitman game and Claude suits up; quit it and its
+  usual hat comes back. Your saved hat isn't touched.
 - **Agent 47 extras**: disguises (a chef while editing, a mechanic while tests fail, and a rare
   flamingo), and a mission rating after each job: Silent Assassin if it needed no permission prompts.
 - **Show on screen**: pick which monitor it lives on (it walks over).
