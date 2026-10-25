@@ -227,30 +227,42 @@
 .claude.hat-ninja .hat.ninja,
 .claude.hat-crown .hat.crown,
 .claude.hat-chef .hat.chef { display: inline; }
-svg .cowboy .cb { fill: #a0662f; }
-svg .cowboy .cb-dent { fill: #7e4c1f; }
-svg .cowboy .cb-band { fill: #3a2410; }
 svg .wizard .wz { fill: #5a3d9e; }
 svg .wizard .wz-band { fill: #3c2775; }
 svg .wizard .wz-star { fill: #ffd23f; }
-svg .pirate .pr { fill: #1f1f24; }
-svg .pirate .pr-trim { fill: #d4a017; }
-svg .pirate .pr-skull { fill: #f2f2f2; }
-svg .pirate .pr-eyes { fill: #1f1f24; }
-svg .pirate .pr-strap, svg .pirate .pr-patch { fill: #111; }
-svg .astronaut .as-glass { fill: rgba(190, 225, 255, 0.22); stroke: #e6eef5; stroke-width: 0.45; }
-svg .astronaut .as-ring { fill: #d9dee5; }
-svg .astronaut .as-ant { fill: #9aa3ad; }
-svg .astronaut .as-light { fill: #ff5f5f; }
-svg .astronaut .as-shine { fill: rgba(255, 255, 255, 0.85); }
-svg .ninja .nj-mask { fill: #24252d; }
-svg .ninja .nj-band { fill: #c8102e; }
-svg .ninja .nj-knot { fill: #a00d24; }
-svg .ninja .nj-plate { fill: #b7bec7; }
 svg .crown .cr { fill: #f2c230; }
 svg .crown .cr-red { fill: #d32f2f; }
 svg .crown .cr-blue { fill: #3d8bfd; }
 svg .chef .toque { fill: #f6f6f2; }
 svg .chef .toque-band { fill: #e0e0da; }
-svg .astronaut .as-light { animation: blinkc 1.2s steps(1) infinite; }
 .claude.hat-wizard .bubble, .claude.hat-chef .bubble { bottom: 108px; }
+
+/* redrawn: cowboy, pirate, astronaut, ninja */
+svg .cowboy .cb { fill: #b07a3c; }
+svg .cowboy .cb-dark { fill: #7a4f22; }
+svg .cowboy .cb-light { fill: #d39a55; }
+svg .cowboy .cb-band { fill: #3b2412; }
+svg .cowboy .cb-buckle { fill: #d9dde2; }
+svg .pirate .pr { fill: #30303a; }
+svg .pirate .pr-light { fill: #565666; }
+svg .pirate .pr-gold { fill: #e0b030; }
+svg .pirate .pr-skull, svg .pirate .pr-bone { fill: #f4f4f0; }
+svg .pirate .pr-eyes { fill: #26262c; }
+svg .pirate .pr-band { fill: #c62828; }
+svg .pirate .pr-strap, svg .pirate .pr-patch { fill: #141418; }
+svg .astronaut .as-shell { fill: #f3f5f8; }
+svg .astronaut .as-visor { fill: rgba(40, 80, 140, 0.42); }
+svg .astronaut .as-glint { fill: rgba(255, 255, 255, 0.8); }
+svg .astronaut .as-stripe { fill: #d84a3a; }
+svg .astronaut .as-ear { fill: #9aa3ad; }
+svg .astronaut .as-ant { fill: #9aa3ad; }
+svg .astronaut .as-light { fill: #ff5f5f; animation: blinkc 1.2s steps(1) infinite; }
+svg .astronaut .as-collar { fill: #c9ced6; }
+svg .ninja .nj-hood { fill: #2a2b33; }
+svg .ninja .nj-fold { fill: #1d1e24; }
+svg .ninja .nj-band { fill: #c8102e; }
+svg .ninja .nj-knot { fill: #9e0c24; }
+svg .ninja .nj-plate { fill: #b7bec7; }
+svg .ninja .nj-mark { fill: #4a4f57; }
+.claude.hat-ninja svg .arm, .claude.hat-ninja svg .legs-a rect, .claude.hat-ninja svg .legs-b rect { fill: #2a2b33; }
+.claude.hat-astronaut svg .arm, .claude.hat-astronaut svg .legs-a rect, .claude.hat-astronaut svg .legs-b rect { fill: #f3f5f8; }

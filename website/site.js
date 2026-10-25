@@ -142,12 +142,19 @@ const SPRITE = `
         <rect class="lamp" x="12.6" y="-2.7" width="0.9" height="1.2" />
       </g>
       <g class="hat cowboy">
-        <rect class="cb" x="0" y="-1.6" width="1.2" height="1" />
-        <rect class="cb" x="14.8" y="-1.6" width="1.2" height="1" />
-        <rect class="cb" x="0.6" y="-0.9" width="14.8" height="0.9" />
-        <rect class="cb" x="4" y="-4" width="8" height="3.2" />
-        <rect class="cb-dent" x="7.4" y="-4" width="1.2" height="0.8" />
-        <rect class="cb-band" x="4" y="-1.8" width="8" height="0.8" />
+        <rect class="cb-dark" x="0" y="-2.4" width="1" height="1" />
+        <rect class="cb-dark" x="15" y="-2.4" width="1" height="1" />
+        <rect class="cb" x="0.4" y="-1.8" width="1.6" height="1" />
+        <rect class="cb" x="14" y="-1.8" width="1.6" height="1" />
+        <rect class="cb" x="1.4" y="-1.2" width="13.2" height="1" />
+        <rect class="cb-dark" x="1.8" y="-0.4" width="12.4" height="0.4" />
+        <rect class="cb" x="4" y="-4" width="8" height="3" />
+        <rect class="cb" x="4.6" y="-4.6" width="2.6" height="0.8" />
+        <rect class="cb" x="8.8" y="-4.6" width="2.6" height="0.8" />
+        <rect class="cb-dark" x="7.2" y="-4.2" width="1.6" height="0.8" />
+        <rect class="cb-light" x="4.6" y="-4" width="0.8" height="2" />
+        <rect class="cb-band" x="4" y="-2" width="8" height="0.8" />
+        <rect class="cb-buckle" x="5.2" y="-1.9" width="1" height="0.6" />
       </g>
       <g class="hat wizard">
         <rect class="wz" x="1.6" y="-0.8" width="12.8" height="0.8" />
@@ -162,31 +169,57 @@ const SPRITE = `
         <rect class="wz-band" x="4.4" y="-1.2" width="7.2" height="0.4" />
       </g>
       <g class="hat pirate">
-        <rect class="pr" x="2" y="-1.6" width="12" height="1.6" />
-        <rect class="pr" x="3.4" y="-3" width="9.2" height="1.6" />
-        <rect class="pr" x="1" y="-2.4" width="1.6" height="1.4" />
-        <rect class="pr" x="13.4" y="-2.4" width="1.6" height="1.4" />
-        <rect class="pr-trim" x="2" y="-0.4" width="12" height="0.4" />
-        <rect class="pr-skull" x="7.3" y="-2.6" width="1.4" height="1.2" />
-        <rect class="pr-eyes" x="7.5" y="-2.3" width="0.3" height="0.3" />
-        <rect class="pr-eyes" x="8.2" y="-2.3" width="0.3" height="0.3" />
-        <rect class="pr-strap" x="2" y="1.1" width="12" height="0.3" />
-        <rect class="pr-patch" x="9.4" y="1.6" width="2.2" height="2.6" />
+        <rect class="pr-band" x="2" y="-0.6" width="12" height="1" />
+        <rect class="pr-band" x="14" y="-0.2" width="0.9" height="1.4" />
+        <rect class="pr-band" x="14.6" y="0.8" width="0.8" height="1" />
+        <rect class="pr" x="2.4" y="-2.4" width="11.2" height="1.8" />
+        <rect class="pr" x="4" y="-3.4" width="8" height="1" />
+        <rect class="pr" x="6.4" y="-4" width="3.2" height="0.6" />
+        <rect class="pr" x="0.6" y="-3" width="2" height="1.6" />
+        <rect class="pr" x="13.4" y="-3" width="2" height="1.6" />
+        <rect class="pr-gold" x="0.6" y="-3.2" width="2" height="0.4" /><rect class="pr-light" x="0.6" y="-3" width="0.4" height="1.6" /><rect class="pr-light" x="15" y="-3" width="0.4" height="1.6" />
+        <rect class="pr-gold" x="13.4" y="-3.2" width="2" height="0.4" />
+        <rect class="pr-gold" x="2.4" y="-0.9" width="11.2" height="0.4" />
+        <rect class="pr-light" x="4" y="-3.4" width="8" height="0.3" />
+        <rect class="pr-bone" x="6.2" y="-1.6" width="3.6" height="0.4" transform="rotate(18 8 -1.4)" />
+        <rect class="pr-bone" x="6.2" y="-1.6" width="3.6" height="0.4" transform="rotate(-18 8 -1.4)" />
+        <rect class="pr-skull" x="7.1" y="-3.1" width="1.8" height="1.3" />
+        <rect class="pr-skull" x="7.4" y="-1.9" width="1.2" height="0.4" />
+        <rect class="pr-eyes" x="7.4" y="-2.7" width="0.45" height="0.45" />
+        <rect class="pr-eyes" x="8.15" y="-2.7" width="0.45" height="0.45" />
+        <rect class="pr-strap" x="2" y="0.9" width="8" height="0.35" /><rect class="pr-strap" x="11.2" y="0.3" width="2.8" height="0.35" transform="rotate(-28 11.2 0.5)" />
+        <rect class="pr-patch" x="9.5" y="1.7" width="2" height="2.4" />
+        <rect class="pr-patch" x="9.8" y="1.4" width="1.4" height="3" />
       </g>
       <g class="hat astronaut">
-        <circle class="as-glass" cx="8" cy="3.2" r="6.9" />
-        <rect class="as-ring" x="1.5" y="8.6" width="13" height="1" />
-        <rect class="as-ant" x="11.6" y="-5.8" width="0.4" height="2.6" />
-        <rect class="as-light" x="11.4" y="-6.4" width="0.8" height="0.8" />
-        <rect class="as-shine" x="3.4" y="-1.4" width="1.6" height="0.5" />
+        <rect class="as-shell" x="1.4" y="-2.2" width="13.2" height="2.6" />
+        <rect class="as-shell" x="2.2" y="-2.8" width="11.6" height="0.8" />
+        <rect class="as-shell" x="1.4" y="0" width="1.8" height="5" />
+        <rect class="as-shell" x="12.8" y="0" width="1.8" height="5" />
+        <rect class="as-shell" x="1.4" y="4.2" width="13.2" height="0.9" />
+        <rect class="as-visor" x="3.2" y="0.4" width="9.6" height="3.8" />
+        <rect class="as-glint" x="3.8" y="0.8" width="2.2" height="0.5" />
+        <rect class="as-glint" x="3.8" y="1.4" width="0.6" height="0.9" />
+        <rect class="as-stripe" x="6.6" y="-2.8" width="2.8" height="0.6" />
+        <rect class="as-ear" x="0.6" y="1" width="1" height="2.6" />
+        <rect class="as-ear" x="14.4" y="1" width="1" height="2.6" />
+        <rect class="as-ant" x="12.2" y="-5" width="0.4" height="2.4" />
+        <rect class="as-light" x="12" y="-5.6" width="0.8" height="0.8" />
+        <rect class="as-collar" x="1.4" y="5" width="13.2" height="0.6" />
       </g>
       <g class="hat ninja">
-        <rect class="nj-mask" x="2" y="3.9" width="12" height="3.11" />
-        <rect class="nj-band" x="2" y="0.4" width="12" height="1.2" />
-        <rect class="nj-band" x="0.2" y="0.6" width="1.9" height="0.6" />
-        <rect class="nj-band" x="-1" y="1.2" width="1.6" height="0.6" />
-        <rect class="nj-knot" x="1.6" y="0.5" width="0.9" height="1" />
-        <rect class="nj-plate" x="6.8" y="0.6" width="2.4" height="0.8" />
+        <rect class="nj-hood" x="2" y="-0.5" width="12" height="2.3" />
+        <rect class="nj-hood" x="2" y="4" width="12" height="3.01" />
+        <rect class="nj-hood" x="2" y="1.8" width="1.6" height="2.2" />
+        <rect class="nj-hood" x="12.4" y="1.8" width="1.6" height="2.2" />
+        <rect class="nj-fold" x="2" y="5.2" width="12" height="0.3" />
+        <rect class="nj-fold" x="7.8" y="4" width="0.4" height="3" />
+        <rect class="nj-band" x="2" y="0.5" width="12" height="0.9" />
+        <rect class="nj-knot" x="1.2" y="0.4" width="1.2" height="1.2" />
+        <rect class="nj-band" x="-0.4" y="0.8" width="1.8" height="0.5" transform="rotate(-14 1 1)" />
+        <rect class="nj-band" x="-0.8" y="1.4" width="2" height="0.5" transform="rotate(18 1 1.6)" />
+        <rect class="nj-plate" x="6.6" y="0.6" width="2.8" height="0.7" />
+        <rect class="nj-mark" x="7.6" y="0.75" width="0.8" height="0.4" />
       </g>
       <g class="hat crown">
         <rect class="cr" x="4" y="-1.4" width="8" height="1.4" />

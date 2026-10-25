@@ -1,7 +1,7 @@
 {
   "name": "claudetop",
   "productName": "claudetop",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "A little Claude that lives at the bottom of your screen and shows what Claude Code is up to",
   "author": "potata",
   "repository": "github:benceandrastoth-ply/claudetop",
