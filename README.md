@@ -7,7 +7,8 @@ A little pixel Claude that lives at the bottom of your screen and shows what Cla
 | **Working** | walks around (or taps away in place) with a "Working…" bubble |
 | **Needs you** | bounces and waves: Claude is waiting on a permission or question |
 | **Done** | hops and says "Done! ✓" until you've seen it (see below) |
-| **Out of credits** | turns grey and deflates (billing / usage-limit errors) |
+| **Out of credits** | turns grey and deflates (billing / usage-limit errors); hover to see when the limit resets |
+| **Tokens are back** | when that reset time passes: a jolt of colour, then it glows with charge until you look |
 | **Resting** | sits down and snoozes |
 
 **When "Done" goes back to resting:** if you're already in the Claude Code window when it
@@ -28,6 +29,8 @@ the session or its title looks like a Claude Code title (`✳ topic`, `◑ topic
   TV. If Claude Code finishes mid-show, it jumps up and kicks the TV across all your screens.
 - **Dance to music**: when music plays (Spotify and other music apps, or anything incl. browser
   videos), Claude puts on headphones and dances with colourful notes floating around.
+- **Cry when you open another AI**: switch to ChatGPT, Gemini, Copilot, Perplexity, Grok, DeepSeek
+  or friends (browser tab or app) and Claude bursts into tears for a few seconds. Once a minute at most.
 - **Show on screen**: pick which monitor it lives on (it walks over).
 - **Roam across all screens**: wander freely over every monitor, hopping across the edges.
 
@@ -37,7 +40,7 @@ Off by default; turn it on from the right-click menu. When the browser tab in fr
 site or keyword in its title, Claude closes that tab (Ctrl+W) and tells you to lock in. How
 depends on the hat: no hat slashes a red line through the tab; a hard hat gets thrown at it (and
 fetched afterwards); a propeller flies Claude up to bonk it, which knocks the hat off: Claude
-drops, gets embarrassed, angry or sad, picks the hat up and flies back; a miner digs down, peeks
+tumbles down and lands flat, the hat flutters down and bonks it on the head, then it gets up, gets embarrassed, angry or sad, picks the hat up and flies back; a miner digs down, peeks
 out of the ceiling upside down, whacks the tab with a shovel, falls spinning into a hole in the
 floor and tunnels back; Agent 47 lobs a remote explosive rubber duck onto the tab and clicks.
 It only reads window and tab titles, never what's on screen.

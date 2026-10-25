@@ -84,6 +84,7 @@ let config = {
   hat: 'none', // 'none' | 'hard' | 'propeller' | 'miner' | 'agent47'
   dance: 'apps', // 'off' | 'apps' (music apps only) | 'any' (anything playing, browsers too)
   tv: true, // sit down and watch a little TV while you watch videos
+  jealous: true, // cry when you open another AI
   setupDone: false, // Linux: the first-launch question has been asked (Windows asks in the installer)
   preview: null,
 };
@@ -391,6 +392,7 @@ const PREVIEWS = [
   ['waiting', 'Needs you'],
   ['done', 'Done'],
   ['nocredit', 'Out of credits'],
+  ['recharged', 'Tokens are back'],
   ['resting', 'Resting'],
 ];
 
@@ -461,6 +463,12 @@ function menuTemplate() {
       type: 'checkbox',
       checked: config.tv,
       click: (item) => setFlag('tv', item.checked),
+    },
+    {
+      label: 'Cry when you open another AI',
+      type: 'checkbox',
+      checked: config.jealous,
+      click: (item) => setFlag('jealous', item.checked),
     },
     { type: 'separator' },
     {

@@ -19,9 +19,36 @@ function readStdin() {
   }
 }
 
-// Look at the tail of the transcript for an API error about credits / limits.
-function transcriptSaysNoCredit(transcriptPath) {
-  if (!transcriptPath) return false;
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+// When does the limit lift? Claude Code says so in the error: "...limit reached|1748278800"
+// (seconds), "resets 3pm", "reset at 3:30pm (Europe/Budapest)", "resets Oct 27, 9am" or
+// "resets in 2h 30m". Returns ms since the epoch, or null.
+function resetTime(text, now = Date.now()) {
+  const epoch = text.match(/\|(\d{10})\b/);
+  if (epoch) return Number(epoch[1]) * 1000;
+  const rel = text.match(/resets?\s+in\s+(?:(\d+)\s*h(?:ours?)?)?\s*(?:(\d+)\s*m(?:in(?:utes?)?)?)?/i);
+  if (rel && (rel[1] || rel[2])) return now + ((Number(rel[1]) || 0) * 60 + (Number(rel[2]) || 0)) * 60 * 1000;
+  const at = text.match(/resets?\s+(?:at\s+)?(?:([a-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(?:at\s+)?)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  if (!at) return null;
+  let hour = Number(at[3]) % (at[5] ? 12 : 24);
+  if (at[5] && at[5].toLowerCase() === 'pm') hour += 12;
+  const d = new Date(now);
+  d.setHours(hour, Number(at[4]) || 0, 0, 0);
+  const month = at[1] ? MONTHS.indexOf(at[1].toLowerCase()) : -1;
+  if (month >= 0) {
+    d.setMonth(month, Number(at[2]));
+    if (d.getTime() <= now - 24 * 60 * 60 * 1000) d.setFullYear(d.getFullYear() + 1);
+  } else if (d.getTime() <= now) {
+    d.setDate(d.getDate() + 1);
+  }
+  return d.getTime();
+}
+
+// Look at the tail of the transcript for an API error about credits / limits. Returns the
+// error's text, or null.
+function transcriptNoCreditError(transcriptPath) {
+  if (!transcriptPath) return null;
   try {
     const fd = fs.openSync(transcriptPath, 'r');
     const size = fs.fstatSync(fd).size;
@@ -33,14 +60,18 @@ function transcriptSaysNoCredit(transcriptPath) {
     for (const line of lines.reverse()) {
       let entry;
       try { entry = JSON.parse(line); } catch { continue; }
-      if (entry.type === 'user') return false; // a newer user turn came after
+      if (entry.type === 'user') return null; // a newer user turn came after
       if (entry.isApiErrorMessage || entry.error) {
-        return CREDIT_RE.test(JSON.stringify(entry));
+        const text = JSON.stringify(entry);
+        return CREDIT_RE.test(text) ? text : null;
       }
     }
   } catch {}
-  return false;
+  return null;
 }
+
+// The text of the limit error behind a "nocredit", if there is one (for its reset time).
+let creditError = null;
 
 // The processes this hook runs inside (hook -> shell -> claude -> shell -> terminal ...),
 // as "pid:name" strings. claudetop matches the foreground window against these to tell
@@ -95,9 +126,11 @@ function stateFor(input) {
       // Idle reminders aren't "needs you" moments; permission prompts are.
       return input.notification_type === 'idle_prompt' ? null : 'waiting';
     case 'Stop':
-      return transcriptSaysNoCredit(input.transcript_path) ? 'nocredit' : 'done';
+      creditError = transcriptNoCreditError(input.transcript_path);
+      return creditError ? 'nocredit' : 'done';
     case 'StopFailure':
-      return CREDIT_RE.test(JSON.stringify(input)) ? 'nocredit' : 'error';
+      creditError = JSON.stringify(input);
+      return CREDIT_RE.test(creditError) ? 'nocredit' : 'error';
     case 'SessionStart':
       return 'idle';
     default:
@@ -135,10 +168,19 @@ function main() {
     at: Date.now(),
     chain: previous.chain && previous.chain.length ? previous.chain : processChain(),
   };
+  if (state === 'nocredit') {
+    const resetAt = resetTime(creditError || '');
+    if (resetAt) record.resetAt = resetAt;
+  }
   const tmp = file + '.' + process.pid + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(record));
   fs.renameSync(tmp, file);
 }
 
-try { main(); } catch {}
-process.exit(0);
+// (claudetop's own exe runs this file with require(), so a test switch, not require.main.)
+if (!process.env.CLAUDETOP_HOOK_TEST) {
+  try { main(); } catch {}
+  process.exit(0);
+}
+
+module.exports = { resetTime };

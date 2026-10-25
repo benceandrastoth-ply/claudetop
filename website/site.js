@@ -93,6 +93,7 @@ function escapeHtml(s) {
 const SPRITE = `
   <div class="bubble"></div>
   <div class="zzz" aria-hidden="true"><span>z</span><span>z</span><span>Z</span></div>
+  <div class="bolts" aria-hidden="true"><span>⚡</span><span>⚡</span><span>⚡</span></div>
   <div class="sprite"><div class="bob">
     <svg viewBox="0 0 16 10" width="96" height="60" shape-rendering="crispEdges" aria-hidden="true">
       <g class="legs-a"><rect x="3" y="7" width="1" height="3" /><rect x="10" y="7" width="1" height="3" /></g>
@@ -163,7 +164,8 @@ const STATES = [
   ['working', 'Working', 'Walks around while Claude Code works, with a "Working…" bubble.'],
   ['waiting', 'Waiting for you', 'Bounces and waves when Claude Code needs your permission or an answer.'],
   ['done', 'Done', 'Hops and says so. It settles down once you go back to Claude Code.'],
-  ['nocredit', 'Out of credits', 'Turns grey and deflates when you hit a usage or billing limit.'],
+  ['nocredit', 'Out of credits', 'Turns grey and deflates when you hit a usage or billing limit. Hover over it to see when the limit lifts.'],
+  ['recharged', 'Tokens are back', 'The moment your limit resets, the colour comes rushing back. It stays charged up until you return.'],
   ['resting', 'Idle', 'Sits down and snoozes until there is work again.'],
 ];
 const stateList = document.getElementById('state-list');
@@ -220,12 +222,14 @@ const BUBBLES = {
   waiting: 'Needs you!',
   done: 'Done! ✓',
   nocredit: 'Out of credits',
+  recharged: 'Tokens are back! ⚡',
 };
 const BUBBLES_47 = {
   working: 'On a contract<span class="dots"><span>.</span><span>.</span><span>.</span></span>',
   waiting: 'Awaiting orders.',
   done: 'Mission accomplished.',
   nocredit: 'Contract terminated.',
+  recharged: 'Contract renewed.',
 };
 
 const stage = document.getElementById('stage');
@@ -256,6 +260,11 @@ function setState(next) {
     walker.pauseUntil = performance.now() + 1600;
     setTimeout(() => demo.classList.remove('celebrate'), 1600);
   }
+  if (state === 'recharged') {
+    demo.classList.add('powerup');
+    walker.pauseUntil = performance.now() + 1700;
+    setTimeout(() => demo.classList.remove('powerup'), 1700);
+  }
   renderBubble();
 }
 
@@ -277,7 +286,7 @@ document.getElementById('hat-picker').addEventListener('change', (e) => setHat(e
 function speed() {
   if (reduceMotion) return 0;
   if (state === 'working') return hat === 'agent47' ? 47 : 70;
-  if (state === 'done') return 30;
+  if (state === 'done' || state === 'recharged') return 30;
   return 0;
 }
 

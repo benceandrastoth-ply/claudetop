@@ -53,6 +53,7 @@
           <label><input type="radio" name="state" value="waiting"><span>Waiting for you</span></label>
           <label><input type="radio" name="state" value="done"><span>Done</span></label>
           <label><input type="radio" name="state" value="nocredit"><span>Out of credits</span></label>
+          <label><input type="radio" name="state" value="recharged"><span>Tokens are back</span></label>
           <label><input type="radio" name="state" value="resting"><span>Idle</span></label>
         </fieldset>
         <fieldset class="picker" id="hat-picker">
@@ -97,6 +98,10 @@
           <div>
             <dt>Music and videos</dt>
             <dd>Put something on. Claude has opinions about what you listen to, and about being interrupted mid-episode.</dd>
+          </div>
+          <div>
+            <dt>Loyalty</dt>
+            <dd>Claude knows it isn't the only AI out there. It would just rather not see you with the others.</dd>
           </div>
           <div>
             <dt>Lock-in mode</dt>
@@ -177,7 +182,7 @@
         </details>
         <details>
           <summary>How do I check my download is genuine?</summary>
-          <p>Each release below lists the installer's SHA-256 fingerprint. In PowerShell, run <code>Get-FileHash .\claudetop-Setup-0.2.1.exe</code> in your Downloads folder and check that the hash matches.</p>
+          <p>Each release below lists the installer's SHA-256 fingerprint. In PowerShell, run <code>Get-FileHash .\claudetop-Setup-*.exe</code> in your Downloads folder and check that the hash matches.</p>
         </details>
         <details>
           <summary>Does it work with the Claude app or claude.ai?</summary>

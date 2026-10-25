@@ -93,7 +93,13 @@ function computeState(now) {
 
   const latest = [...sessions].sort((a, b) => b.at - a.at)[0];
   if (!latest) return 'resting';
-  if (latest.state === 'nocredit') return 'nocredit';
+  if (latest.state === 'nocredit') {
+    // Past the time Claude Code said the limit resets: tokens are back. It stays excited until
+    // you've had a look, the same way "done" does.
+    if (!latest.resetAt || now < latest.resetAt) return 'nocredit';
+    const reset = { ...latest, id: `${latest.id}:reset`, at: latest.resetAt };
+    return finishExpired(reset, now) ? 'resting' : 'recharged';
+  }
   if ((latest.state === 'done' || latest.state === 'error') && !finishExpired(latest, now)) return latest.state;
   return 'resting';
 }
@@ -103,6 +109,7 @@ const BUBBLES = {
   waiting: 'Needs you!',
   done: 'Done! ✓',
   nocredit: 'Out of credits 🪫',
+  recharged: 'Tokens are back! ⚡',
   error: 'Something went wrong',
 };
 
@@ -123,6 +130,11 @@ function setState(next) {
     setTimeout(() => el.classList.remove('celebrate'), 1600);
   }
   if (state === 'working') walker.pauseUntil = 0;
+  if (state === 'recharged' && prev !== 'recharged') {
+    el.classList.add('powerup');
+    walker.pauseUntil = performance.now() + 1700;
+    setTimeout(() => el.classList.remove('powerup'), 1700);
+  }
   renderInfo();
 }
 
@@ -135,6 +147,7 @@ const BUBBLES_47 = {
   waiting: 'Awaiting orders.',
   done: 'Mission accomplished.',
   nocredit: 'Contract terminated.',
+  recharged: 'Contract renewed.',
   error: 'Mission failed.',
 };
 const isAgent = () => config.hat === 'agent47';
@@ -146,6 +159,7 @@ function renderBubble() {
     html = escapeHtml(lines[panicLine % lines.length]);
   }
   if (sceneLine) html = escapeHtml(sceneLine);
+  if (cryLine) html = escapeHtml(cryLine);
   if (lockInMessage) html = escapeHtml(lockInMessage);
   bubble.innerHTML = html;
   bubble.classList.toggle('show', !!html);
@@ -323,6 +337,79 @@ function endScene() {
   renderBubble();
 }
 
+// ---------- jealousy ----------
+// Open another AI and Claude bursts into tears for a few seconds.
+const OTHER_AIS = [
+  [/chatgpt|openai/i, 'ChatGPT'],
+  [/gemini/i, 'Gemini'],
+  [/copilot/i, 'Copilot'],
+  [/perplexity/i, 'Perplexity'],
+  [/\bgrok\b/i, 'Grok'],
+  [/deepseek/i, 'DeepSeek'],
+  [/\ble chat\b|mistral ai/i, 'Le Chat'],
+  [/\bmeta ai\b/i, 'Meta AI'],
+  [/character\.ai/i, 'Character.AI'],
+];
+// In a browser the tab title tells; their desktop apps go by process name.
+const BROWSER_NAMES = [
+  'chrome', 'msedge', 'firefox', 'brave', 'opera', 'vivaldi', 'arc', 'librewolf', 'waterfox',
+  'zen', 'floorp', 'chromium', 'thorium', 'yandex',
+];
+const AI_APPS = /chatgpt|copilot|perplexity|gemini|grok|deepseek/i;
+const CRY_LINES = [
+  ['{ai}?? 😭', 'Am I not enough?'],
+  ['*sob* {ai}…', 'I thought we had something…'],
+  ['You said I was your favourite!', '*sniff*'],
+  ['Fine. Go ask {ai}.', '…see if I care 😢'],
+  ['{ai} can’t even run your tests!', '*sob*'],
+];
+const CRY_LINES_47 = [['{ai}.', 'Noted.'], ['A new handler?', 'I never forget a face.']];
+const CRY_COOLDOWN_MS = 60 * 1000;
+let crying = false;
+let cryLine = null;
+let lastCry = -Infinity;
+let lastAi = null;
+
+function otherAi(f) {
+  const name = baseName(f.name || '');
+  const browser = BROWSER_NAMES.some((b) => name.startsWith(b));
+  const text = browser ? f.title : AI_APPS.test(name) ? `${name} ${f.title}` : '';
+  if (!text) return null;
+  const hit = OTHER_AIS.find(([re]) => re.test(text));
+  return hit ? hit[1] : null;
+}
+
+function checkJealous() {
+  const ai = otherAi(focus);
+  const fresh = ai && ai !== lastAi;
+  lastAi = ai;
+  if (!fresh || config.jealous === false) return;
+  if (puppet || crying || dragging || panicking || scene || tv) return;
+  if (performance.now() - lastCry < CRY_COOLDOWN_MS) return;
+  cry(ai);
+}
+
+async function cry(ai) {
+  crying = true;
+  lastCry = performance.now();
+  walker.target = null;
+  updateDance();
+  el.classList.add('crying');
+  const [first, second] = pick(isAgent() ? CRY_LINES_47 : CRY_LINES).map((l) => l.replace('{ai}', ai));
+  cryLine = first;
+  renderBubble();
+  await wait(2200);
+  cryLine = second;
+  renderBubble();
+  await wait(2000);
+  cryLine = null;
+  el.classList.remove('crying');
+  crying = false;
+  walker.pauseUntil = performance.now() + 1500;
+  renderBubble();
+  updateDance();
+}
+
 // ---------- dancing ----------
 // With music playing, Claude puts on headphones and dances (unless something more
 // important is going on).
@@ -453,7 +540,7 @@ async function kickTv() {
 
 function updateDance() {
   const want =
-    musicPlaying() && !panicking && !scene && !puppet && ['resting', 'done', 'working'].includes(state);
+    musicPlaying() && !panicking && !scene && !puppet && !crying && ['resting', 'done', 'working', 'recharged'].includes(state);
   if (want === dancing) return;
   dancing = want;
   el.classList.toggle('dancing', want);
@@ -560,6 +647,28 @@ function placeFxHat(hat, x, y, rot, flip = walker.dir < 0) {
 
 // Where the hat box sits when it's on Claude's head (page coordinates).
 const headPoint = () => ({ x: walker.x + WIDTH / 2, y: window.innerHeight - currentBottom() - 60 - 15 });
+
+// A little comic-book word that pops up and fades (*clink*, *bonk*).
+function sfxText(text, x, y) {
+  const t = document.createElement('div');
+  t.className = 'clink';
+  t.textContent = text;
+  t.style.left = `${x}px`;
+  t.style.top = `${y}px`;
+  fx.appendChild(t);
+  setTimeout(() => t.remove(), 900);
+}
+
+// Stars circling a dazed head.
+function dizzyStars(x, y) {
+  const d = document.createElement('div');
+  d.className = 'dizzy';
+  d.innerHTML = '<i>★</i><i>★</i><i>★</i>';
+  d.style.left = `${x}px`;
+  d.style.top = `${y}px`;
+  fx.appendChild(d);
+  return d;
+}
 
 function poof(x, y) {
   const p = document.createElement('div');
@@ -804,36 +913,91 @@ async function flyAndBonk(aim) {
   await wait(200);
   el.classList.remove('press');
 
-  // Off comes the hat. It tumbles to the floor while Claude hangs there for a beat...
+  // The bonk knocks the hat off and up. Without it Claude hangs there for a beat, legs
+  // pedalling, realises, and drops.
   const head = headPoint();
   const dir = walker.dir;
   el.classList.remove('flying');
   el.classList.add('hat-off', 'stunned');
   const hat = makeFxHat('propeller');
-  const drift = dir * (30 + Math.random() * 60);
-  const landX = head.x + drift;
-  const landY = floorY(landX) - 10;
-  const hatFalls = (async () => {
-    await tween(Math.max(500, Math.sqrt(Math.max(1, landY - head.y)) * 28), (p) => {
-      placeFxHat(hat, head.x + drift * p, head.y + (landY - head.y) * p * p, dir * 540 * p);
-    });
-    await tween(240, (p) => placeFxHat(hat, landX, landY - 12 * Math.sin(Math.PI * p), dir * 540));
-  })();
-  await wait(400);
+  hat.classList.add('spinning');
+  const hatUp = { x: head.x - dir * 30, y: head.y - 50 };
+  const knocked = tween(380, (p) => {
+    const e = easeOut(p);
+    placeFxHat(hat, head.x + (hatUp.x - head.x) * e, head.y + (hatUp.y - head.y) * e, -dir * 200 * e);
+  });
+  await tween(450, (p) => {
+    walker.airBottom = to.b + 8 * Math.sin(p * Math.PI) - 6 * p; // a little hang-time wobble
+    walker.rot = 8 * Math.sin(p * Math.PI * 4) * (1 - p);
+  });
+  await knocked;
 
-  // ...then drops like a stone.
+  // It tumbles head over heels (1¼ turns) and slams down flat on its side, like a miner falling
+  // into its hole, minus the hole. Lying on its side the 96px-wide sprite is 96px tall, so the
+  // box sits a little higher to keep its body on the floor.
   const top = walker.airBottom;
   const land = 4 + groundAt(walker.x);
+  const h = el.offsetHeight || 60;
+  const lieB = land + 38 - h / 2;
+  const fallMs = Math.max(500, Math.sqrt(Math.max(1, top - lieB)) * 30);
   el.classList.add('falling');
-  await tween(Math.max(350, Math.sqrt(Math.max(1, top - land)) * 24), (p) => {
-    walker.airBottom = top + (land - top) * p * p;
+  const fell = tween(fallMs, (p) => {
+    walker.airBottom = top + (lieB - top) * p * p;
+    walker.rot = dir * 450 * p * p;
   });
-  walker.airBottom = null;
+
+  // Meanwhile the hat autorotates down like a sycamore seed, drifting over to where Claude's
+  // head is going to be.
+  const cx = walker.x + WIDTH / 2;
+  const headLying = { x: cx + dir * (h / 2 + 10), y: window.innerHeight - lieB - h / 2 };
+  const hatFalls = tween(fallMs + 900, (p) => {
+    const x = hatUp.x + (headLying.x - hatUp.x) * p + 26 * Math.sin(p * Math.PI * 3) * (1 - p);
+    const y = hatUp.y + (headLying.y - hatUp.y) * (p * p * 0.4 + p * 0.6);
+    placeFxHat(hat, x, y, -dir * 200 + dir * 290 * p + 14 * Math.sin(p * Math.PI * 5), false);
+  });
+
+  await fell;
+  walker.rot = dir * 90;
   el.classList.remove('falling', 'stunned');
+  el.classList.add('crashed');
+  burst(cx, floorY(cx) - 10);
+  dirt(cx, floorY(cx) - 6, 12);
+  await tween(260, (p) => {
+    walker.airBottom = lieB + 12 * Math.sin(Math.PI * p) * (1 - p); // one small bounce
+  });
+  walker.airBottom = lieB;
+  const stars = dizzyStars(headLying.x, headLying.y - 30);
+
+  // ...and the hat lands right on its head. Bonk.
+  await hatFalls;
+  burst(headLying.x, headLying.y);
+  sfxText('*bonk*', headLying.x, headLying.y - 34);
+  el.classList.add('ouch');
+  await wait(180);
+  el.classList.remove('ouch');
+
+  // The hat rolls off onto the floor beside it.
+  const landX = headLying.x + dir * 40;
+  const landY = floorY(landX) - 9;
+  await tween(420, (p) => {
+    placeFxHat(hat, headLying.x + (landX - headLying.x) * p, headLying.y + (landY - headLying.y) * p - 18 * Math.sin(Math.PI * p), dir * (90 + 90 * p), false);
+  });
+  hat.classList.remove('spinning');
+  await wait(700);
+
+  // Gets back up.
+  stars.remove();
+  await tween(420, (p) => {
+    const e = easeInOut(p);
+    walker.rot = dir * 90 * (1 - e);
+    walker.airBottom = lieB + (land - lieB) * e + 10 * Math.sin(Math.PI * p);
+  });
+  walker.rot = 0;
+  walker.airBottom = null;
+  el.classList.remove('crashed'); // (it hides the bubble, which would turn with Claude)
   el.classList.add('landing');
   await wait(300);
   el.classList.remove('landing');
-  await hatFalls;
 
   await react();
   lockInMessage = 'getting my hat…';
@@ -1020,7 +1184,8 @@ async function lockIn(job) {
   renderBubble();
   await wait(1400);
   lockInMessage = null;
-  el.classList.remove('lockin', 'leap', 'flying', 'throwing', 'hat-off', 'pickup', 'press', 'stunned', 'falling');
+  el.classList.remove('lockin', 'leap', 'flying', 'throwing', 'hat-off', 'pickup', 'press', 'stunned', 'falling', 'crashed', 'ouch');
+  fx.querySelectorAll('.dizzy').forEach((d) => d.remove());
   el.classList.remove('ceiling', 'swing', 'digging', 'underground', 'shovel-out');
   walker.airBottom = null;
   walker.sink = 0;
@@ -1043,6 +1208,7 @@ const LABELS = {
   waiting: 'needs your input',
   done: 'finished',
   nocredit: 'out of credits',
+  recharged: 'back from its usage limit',
   error: 'stopped with an error',
   idle: 'idle',
 };
@@ -1053,6 +1219,8 @@ function ago(ms) {
   if (s < 3600) return `${Math.round(s / 60)}m ago`;
   return `${Math.round(s / 3600)}h ago`;
 }
+
+const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -1067,7 +1235,8 @@ function renderInfo() {
     .map((s) => {
       const project = s.cwd ? s.cwd.split(/[\\/]/).filter(Boolean).pop() : 'session';
       const tool = s.state === 'working' && s.tool ? ` · ${escapeHtml(s.tool)}` : '';
-      return `${escapeHtml(project)}: ${LABELS[s.state] || s.state}${tool} <span class="muted">${ago(now - s.at)}</span>`;
+      const reset = s.state === 'nocredit' && s.resetAt > now ? `, back at ${clock(s.resetAt)}` : '';
+      return `${escapeHtml(project)}: ${LABELS[s.state] || s.state}${reset}${tool} <span class="muted">${ago(now - s.at)}</span>`;
     });
   if (!rows.length) rows.push('<span class="muted">No Claude Code sessions yet</span>');
   if (dancing) {
@@ -1141,10 +1310,10 @@ function speedFor() {
   if (scene === 'relief') return 0;
   if (scene === 'returning' || scene === 'homing') return 140;
   if (panicking) return isAgent() ? 160 : 290; // even in "stay in place" mode: this is an emergency
-  if (dancing || tv) return 0;
+  if (dancing || tv || crying) return 0;
   if (config.mode !== 'walk') return 0;
   if (state === 'working') return isAgent() ? 47 : 70;
-  if (state === 'done') return 30;
+  if (state === 'done' || state === 'recharged') return 30;
   return 0; // waiting, out of credits, resting: stand still
 }
 
@@ -1403,6 +1572,7 @@ window.claudetop.onLockIn(lockIn);
 
 window.claudetop.onFocus((f) => {
   focus = f;
+  checkJealous();
   setState(computeState(Date.now()));
 });
 
