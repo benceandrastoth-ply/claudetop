@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>claudetop on Android</title>
+  <meta name="description" content="claudetop for Android: a little Claude that floats over your apps and tells you when Claude Code on your PC needs you or is done.">
+  <link rel="icon" href="favicon.ico">
+  <link rel="stylesheet" href="fonts/fonts.css">
+  <link rel="stylesheet" href="styles.css">
+  <script src="releases.js"></script>
+</head>
+<body class="doc-page">
+  <nav class="topnav" aria-label="Main">
+    <a class="wordmark" href="./">claudetop</a>
+    <ul><li><a href="./">Back to the site</a></li></ul>
+  </nav>
+
+  <main class="doc wrap narrow">
+    <h1>claudetop on Android</h1>
+    <p class="updated" id="android-version">For Android 8 and newer.</p>
+
+    <p>Claude Code runs on your PC, so the Android app is a companion: it follows claudetop on your PC over your Wi-Fi. The little Claude walks along the bottom of your phone's screen, over your other apps, and does what the one on your PC does. When Claude Code needs you or finishes while you're away from the PC, your phone gets a notification.</p>
+    <p><a class="download download-small" id="dl-apk" href="#">Download the APK</a></p>
+
+    <h2>Install it</h2>
+    <ol>
+      <li>Open the download on your phone. Android asks whether your browser (or file manager) may install apps: allow it for this once.</li>
+      <li>Tap <b>Install</b>. Google Play Protect may warn that it doesn't know the app, because it isn't from the Play Store: tap <b>More details → Install anyway</b>.</li>
+    </ol>
+    <p>Updates install the same way, over the old version, and keep your settings.</p>
+
+    <h2>Pair it with your PC</h2>
+    <ol>
+      <li>Make sure claudetop on your PC is version 0.9.0 or newer.</li>
+      <li>On the PC, right-click the little Claude (or its tray icon) and pick <b>Android phone → Pair a phone…</b>. It shows a 6-digit code. If Windows asks about the firewall, allow claudetop on private networks.</li>
+      <li>On the phone, open claudetop, tap <b>Look for my PC</b>, pick your PC and type in the code.</li>
+    </ol>
+    <p>Phone and PC need to be on the same Wi-Fi. If the phone can't find the PC, tap <b>Type in the address</b> and enter the address the pairing window shows (like <code>192.168.1.20:47047</code>).</p>
+    <p>The app asks for two permissions: <b>notifications</b>, and <b>display over other apps</b> so Claude can float over them. Without the second one, Claude only lives inside the app.</p>
+
+    <h2>Using it</h2>
+    <ul>
+      <li><b>Tap</b> Claude after it says "Done!" to tell it you've seen it.</li>
+      <li><b>Double-tap</b> to pet it, <b>hold</b> to open the app, <b>drag</b> or fling it around.</li>
+      <li>Pick a hat in the app, and turn the 8-bit jingles on if you like them.</li>
+      <li>No notification comes when you're at the PC looking at Claude Code already.</li>
+    </ul>
+
+    <h2>Privacy</h2>
+    <p>The phone talks straight to your PC over your own network; nothing goes through the internet. The PC shares what its Claude Code sessions are doing (working, needs you, done, the project folder's name) and whether its Claude Code window is in front. It never shares other windows' titles. Only paired phones get anything: to unpair one, use <b>Android phone → (the phone) → Forget this phone</b> on the PC, or <b>Unpair</b> in the app.</p>
+
+    <h2>Something not working?</h2>
+    <ul>
+      <li><b>"No PC answered"</b>: check that claudetop runs on the PC with the pairing window open, that both are on the same Wi-Fi (not a guest network), and that Windows' firewall allows claudetop on private networks.</li>
+      <li><b>Claude disappears after a while</b>: some phones stop background apps to save battery. In Android's settings, set claudetop's battery use to <b>Unrestricted</b>.</li>
+    </ul>
+    <p>Still stuck? Open an issue on <a href="https://github.com/benceandrastoth-ply/claudetop/issues">GitHub</a>.</p>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      <p class="links"><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="https://github.com/benceandrastoth-ply/claudetop">GitHub</a></p>
+      <p class="legal">An unofficial fan project, not affiliated with or endorsed by Anthropic. Claude and Claude Code are trademarks of Anthropic.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Point at the newest Android build.
+    const r = (window.RELEASES || []).find((x) => x.android);
+    if (r) {
+      document.getElementById('android-version').textContent = `Version ${r.version}, for Android 8 and newer.`;
+      document.getElementById('dl-apk').href = r.android;
+    }
+  </script>
+</body>
+</html>

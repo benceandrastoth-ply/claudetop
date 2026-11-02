@@ -10,6 +10,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const hooksSetup = require('./hooks-setup');
+const { createBridge } = require('./phone-bridge');
 
 const isLinux = process.platform === 'linux';
 const linux = isLinux ? require('./platform-linux') : null;
@@ -97,6 +98,8 @@ let config = {
   gameMode: true, // hide on a fullscreen game's screen, play along on the others
   seasonal: true, // snow in winter, a pumpkin at Halloween...
   setupDone: false, // Linux: the first-launch question has been asked (Windows asks in the installer)
+  phones: [], // paired Android phones: [{ id, name, tokenHash, added }]
+  pcId: null, // tells this PC apart when a phone goes looking for it again
   preview: null,
 };
 let focus = { pid: 0, name: '', title: '' };
@@ -227,8 +230,11 @@ function readSessions() {
   return sessions;
 }
 
+let lastSessions = [];
 function pushSessions() {
-  if (win) win.webContents.send('sessions', readSessions());
+  lastSessions = readSessions();
+  if (win) win.webContents.send('sessions', lastSessions);
+  if (bridge) bridge.update();
 }
 
 function watchSessions() {
@@ -253,6 +259,7 @@ function watchFocusLinux() {
     onFocus: (f) => {
       focus = f;
       if (win) win.webContents.send('focus', focus);
+      phoneFocusChanged();
       updateGame();
     },
     onMedia: (m) => {
@@ -314,6 +321,7 @@ function watchFocus() {
       focus = { pid: Number(pid), name: name || '', title: title || '', rect: rect || '' };
     }
     if (win) win.webContents.send('focus', focus);
+    phoneFocusChanged();
     updateGame();
   });
   watcher.on('exit', () => {
@@ -519,6 +527,93 @@ function createWindow() {
   screen.on('display-removed', onDisplaysChanged);
 }
 
+// ---------- phone (the Android app) ----------
+// Paired phones follow the sessions over the local network (src/phone-bridge.js).
+let bridge = null;
+const CLAUDE_TITLE = /^[^\p{L}\p{N}\s]\s|claude/iu; // same test as the page's
+
+// The phone needs the window in front only to tell whether you've seen a "done", so other
+// windows' titles stay on this PC.
+function phoneFocus() {
+  const f = { pid: focus.pid, name: focus.name, title: CLAUDE_TITLE.test(focus.title || '') ? focus.title : '' };
+  if (focus.available === false) f.available = false;
+  return f;
+}
+
+let phoneFocusTimer = null;
+function phoneFocusChanged() {
+  if (!bridge || phoneFocusTimer) return;
+  phoneFocusTimer = setTimeout(() => {
+    phoneFocusTimer = null;
+    bridge.update();
+  }, 250);
+}
+
+function startBridge() {
+  if (!config.pcId) {
+    config.pcId = require('crypto').randomBytes(8).toString('hex');
+    saveConfig();
+  }
+  bridge = createBridge({
+    pcId: config.pcId,
+    phones: () => config.phones || [],
+    setPhones: (list) => {
+      config.phones = list;
+      saveConfig();
+      rebuildMenus();
+    },
+    snapshot: () => ({ sessions: lastSessions, focus: phoneFocus() }),
+    onPaired: (phone) => {
+      if (pairAbort) pairAbort.abort();
+      dialog.showMessageBox({ type: 'info', title: 'claudetop', message: `Paired with ${phone.name}`, detail: 'The little Claude on your phone now follows Claude Code on this PC.' });
+    },
+  });
+  bridge.refresh();
+}
+
+let pairAbort = null;
+async function pairPhone() {
+  if (pairAbort) return;
+  const { code, addresses, port, name } = bridge.startPairing();
+  pairAbort = new AbortController();
+  const spaced = `${code.slice(0, 3)} ${code.slice(3)}`;
+  const where = addresses.length ? addresses.map((a) => `${a}:${port}`).join(', ') : 'no network found';
+  const firewall = process.platform === 'win32' ? '\n\nIf Windows asks, allow claudetop on private networks.' : '';
+  await dialog.showMessageBox({
+    type: 'info',
+    title: 'claudetop',
+    message: `Pair a phone: ${spaced}`,
+    detail:
+      `1. Install claudetop on your Android phone (from the claudetop website).\n` +
+      `2. Open it, tap "${name}" and enter ${spaced}.\n\n` +
+      `The phone needs to be on the same Wi-Fi as this PC. If it can't find the PC, type in ${where}.` +
+      firewall,
+    buttons: ['Cancel'],
+    signal: pairAbort.signal,
+  });
+  pairAbort = null;
+  bridge.stopPairing();
+}
+
+function forgetPhone(id) {
+  config.phones = (config.phones || []).filter((p) => p.id !== id);
+  saveConfig();
+  bridge.refresh();
+  rebuildMenus();
+}
+
+function phoneMenu() {
+  const phones = config.phones || [];
+  return [
+    { label: 'Pair a phone…', click: pairPhone },
+    ...(phones.length ? [{ type: 'separator' }] : []),
+    ...phones.map((p) => ({
+      label: p.name,
+      submenu: [{ label: 'Forget this phone', click: () => forgetPhone(p.id) }],
+    })),
+  ];
+}
+
 // ---------- menus ----------
 const PREVIEWS = [
   ['working', 'Working'],
@@ -703,6 +798,10 @@ function menuTemplate() {
         } catch {}
         rebuildMenus();
       },
+    },
+    {
+      label: (config.phones || []).length ? `Android phone (${config.phones.length} paired)` : 'Android phone',
+      submenu: phoneMenu(),
     },
     {
       label: isLinux ? 'Start at login' : 'Start with Windows',
@@ -949,6 +1048,7 @@ if (!app.requestSingleInstanceLock()) {
     if (app.isPackaged) {
       try { hooksSetup.refreshHooks(hookCommand()); } catch {}
     }
+    startBridge();
     createWindow();
     const snoozeLeft = (config.soundsSnoozedUntil || 0) - Date.now();
     if (snoozeLeft > 0) snoozeTimer = setTimeout(rebuildMenus, snoozeLeft + 1000);
@@ -967,5 +1067,6 @@ if (!app.requestSingleInstanceLock()) {
   app.on('before-quit', () => {
     app.isQuitting = true;
     if (focusWatcher) (isLinux ? focusWatcher.stop() : focusWatcher.kill());
+    if (bridge) bridge.stop();
   });
 }

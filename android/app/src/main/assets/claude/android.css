@@ -1,0 +1,4 @@
+/* Android: no mouse cursor, and a little more room for the session list on a narrow screen. */
+#claude { cursor: default; -webkit-tap-highlight-color: transparent; }
+* { -webkit-tap-highlight-color: transparent; }
+.info { max-width: 240px; }

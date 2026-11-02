@@ -38,27 +38,38 @@ const latest = releases.find((r) => r.file);
 
 // Offer the visitor's own system first, and the other one right below it.
 const ua = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.userAgent;
-const onLinux = /linux/i.test(ua) && !/android/i.test(ua);
+const onAndroid = /android/i.test(navigator.userAgent);
+const onLinux = /linux/i.test(ua) && !onAndroid;
 
 if (latest) {
   const linuxBuild = latest.linux;
   const useLinux = onLinux && linuxBuild;
+  const useAndroid = onAndroid && latest.android;
   for (const id of ['download-main', 'download-setup']) {
     const a = document.getElementById(id);
-    a.href = useLinux ? linuxBuild.appimage : latest.file;
-    a.textContent = useLinux ? 'Download for Linux' : 'Download for Windows';
+    a.href = useAndroid ? latest.android : useLinux ? linuxBuild.appimage : latest.file;
+    a.textContent = useAndroid ? 'Download for Android' : useLinux ? 'Download for Linux' : 'Download for Windows';
   }
   const meta = document.getElementById('download-meta');
   const released = `released ${niceDate(latest.date)}`;
-  if (useLinux) {
+  const androidLink = latest.android ? ` And for your <a href="android.html">Android phone</a>.` : '';
+  if (useAndroid) {
+    meta.innerHTML =
+      `Version ${escapeHtml(latest.version)} for Android 8 and newer, ${released}. Free. ` +
+      `It follows claudetop on your PC: read the <a href="android.html">Android guide</a>. ` +
+      `Get the PC app for <a href="${escapeHtml(latest.file)}">Windows</a>` +
+      (linuxBuild ? ` or <a href="linux.html">Linux</a>.` : '.');
+  } else if (useLinux) {
     meta.innerHTML =
       `Version ${escapeHtml(latest.version)} for 64-bit Linux, ${released}. Free. ` +
       `Prefer a package? <a href="${escapeHtml(linuxBuild.deb)}">.deb for Ubuntu and Debian</a>. ` +
-      `New to it? Read the <a href="linux.html">Linux guide</a>. Also for <a href="${escapeHtml(latest.file)}">Windows</a>.`;
+      `New to it? Read the <a href="linux.html">Linux guide</a>. Also for <a href="${escapeHtml(latest.file)}">Windows</a>.` +
+      androidLink;
   } else {
     meta.innerHTML =
       `Version ${escapeHtml(latest.version)} for 64-bit Windows 10 and 11. ${mb(latest.size)}, ${released}. Free.` +
-      (linuxBuild ? ` Also for <a href="linux.html">Linux</a>.` : '');
+      (linuxBuild ? ` Also for <a href="linux.html">Linux</a>.` : '') +
+      androidLink;
   }
 }
 
@@ -74,6 +85,7 @@ for (const r of releases) {
     links.push(`<a href="${escapeHtml(r.linux.appimage)}">Linux AppImage</a>`);
     links.push(`<a href="${escapeHtml(r.linux.deb)}">.deb</a>`);
   }
+  if (r.android) links.push(`<a href="${escapeHtml(r.android)}">Android</a>`);
   const action = links.length ? links.join('<br>') : '<span class="gone">Installer not archived</span>';
   li.innerHTML = `
     <div><span class="ver">${escapeHtml(r.version)}</span>

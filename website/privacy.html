@@ -17,9 +17,9 @@
 
   <main class="doc wrap narrow">
     <h1>Privacy policy</h1>
-    <p class="updated">Last updated 25 October 2026</p>
+    <p class="updated">Last updated 2 November 2026</p>
 
-    <p>The short version: claudetop doesn't collect anything. The app works entirely on your computer and never connects to the internet, and this website uses no cookies, analytics or tracking.</p>
+    <p>The short version: claudetop doesn't collect anything. The app works entirely on your computer (and, if you pair one, your phone) and never connects to the internet, and this website uses no cookies, analytics or tracking.</p>
 
     <h2>The app</h2>
     <p>To do its job, claudetop reads a few things on your computer. All of it stays there.</p>
@@ -34,11 +34,15 @@
       <li><b>Which window to bring up.</b> When you click the little Claude, it brings the window that session runs in to the front. That's the only time it switches windows.</li>
       <li><b>Your settings</b>, saved in <code>%APPDATA%\claudetop\config.json</code>.</li>
     </ul>
-    <p>None of this is sent anywhere. The app contains no analytics, no crash reporting and no update checks, and makes no network connections at all. You can check: the source code is <a href="https://github.com/benceandrastoth-ply/claudetop">public on GitHub</a>.</p>
+    <p>None of this is sent anywhere, except to a phone you pair yourself (below). The app contains no analytics, no crash reporting and no update checks, and makes no network connections unless you pair a phone. You can check: the source code is <a href="https://github.com/benceandrastoth-ply/claudetop">public on GitHub</a>.</p>
     <p>Lock-in mode is off until you turn it on. When it's on and it finds a matching tab, it closes that tab by pressing Ctrl+W for you.</p>
     <p>Uninstalling claudetop removes its hooks. To remove everything, also delete <code>~/.claude/claudetop</code> and <code>%APPDATA%\claudetop</code>.</p>
 
-    <h2>This website</h2>
+    <h2>The Android app</h2>
+<p>The Android app only talks to the PC you pair it with, directly over your own network; it never connects to the internet. While a phone is paired (or the pairing window is open), claudetop on the PC listens on your local network (port 47047, and 47048 so the phone can find it) and shares with that phone only: the status of your Claude Code sessions (as in the status files above), and the program and process number of the window in front, with its title only when it looks like Claude Code's. Other windows' titles, what's playing and everything else stay on the PC. To pair, a phone has to type in a code the PC shows; it then gets a key only it knows, and the PC keeps just a fingerprint of that key. Forget a phone in the PC's menu (<b>Android phone</b>) and it's cut off straight away. With no phone paired, nothing listens.</p>
+<p>On the phone, the app keeps the PC's name and address, the key and your settings. It contains no analytics or crash reporting either.</p>
+
+<h2>This website</h2>
     <p>The site sets no cookies, stores nothing in your browser, and loads nothing from other companies: its fonts and files are all served from here. The demo at the top runs entirely in your browser.</p>
     <p>The site is hosted on GitHub Pages, and downloads come from GitHub Releases. Like any web host, GitHub may record technical data such as your IP address when you visit or download. That's covered by the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub General Privacy Statement</a>; claudetop never sees it.</p>
 

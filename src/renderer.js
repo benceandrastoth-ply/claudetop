@@ -2565,8 +2565,12 @@ function renderInfo() {
   if (tv) rows.push(`📺 ${escapeHtml(media.title || 'Watching TV')}`);
   if (quiet()) rows.push(`🔕 Do not disturb${config.dnd ? '' : ' (a call is on)'}`);
   if (gaming) rows.push(`🎮 Playing along: ${escapeHtml(game.title || game.name || 'a game')}`);
-  if (sessions.length) rows.push('<span class="muted">Click to open Claude Code</span>');
-  rows.push(`<span class="muted">${config.mode === 'walk' ? 'Walking around' : 'Staying put'} · right-click for options</span>`);
+  if (window.claudetop.platform === 'android') {
+    rows.push('<span class="muted">Tap: seen it · double-tap: pet · hold: settings</span>');
+  } else {
+    if (sessions.length) rows.push('<span class="muted">Click to open Claude Code</span>');
+    rows.push(`<span class="muted">${config.mode === 'walk' ? 'Walking around' : 'Staying put'} · right-click for options</span>`);
+  }
   info.innerHTML = [head, ...rows].join('<br>');
 }
 
@@ -2659,7 +2663,8 @@ function segmentIndex(x) {
   return layout.segments.findIndex((s) => center >= s.left && center < s.right);
 }
 
-const IS_LINUX = window.claudetop.platform === 'linux';
+// Linux and the Android overlay can't tell by themselves where Claude is, so the page says.
+const REPORTS_RECT = window.claudetop.platform === 'linux' || window.claudetop.platform === 'android';
 let lastRectSent = 0;
 
 let last = performance.now();
@@ -2736,7 +2741,7 @@ function tick(t) {
   el.style.transform = walker.rot ? `rotate(${walker.rot}deg)` : '';
   moveBuddies(t, dt);
   // Linux can't forward mouse movement through the window, so tell main where Claude is.
-  if (IS_LINUX && t - lastRectSent > 80) {
+  if (REPORTS_RECT && t - lastRectSent > 80) {
     lastRectSent = t;
     const r = el.getBoundingClientRect();
     const hits = [r, ...[...buddies.values()].map((b) => b.el.getBoundingClientRect())];

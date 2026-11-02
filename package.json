@@ -1,7 +1,7 @@
 {
   "name": "claudetop",
   "productName": "claudetop",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "description": "A little Claude that lives at the bottom of your screen and shows what Claude Code is up to",
   "author": "potata",
   "repository": "github:benceandrastoth-ply/claudetop",
@@ -12,6 +12,7 @@
     "start": "electron .",
     "dist": "electron-builder --win nsis",
     "dist:linux": "electron-builder --linux AppImage deb",
+    "dist:android": "node scripts/build-android.js",
     "release": "node scripts/publish-release.js",
     "install-hooks": "node scripts/install-hooks.js",
     "uninstall-hooks": "node scripts/install-hooks.js --uninstall"

@@ -100,6 +100,31 @@ AppImage and .deb builds are attached to every release (built by `.github/workfl
 when a release is published). See `website/linux.html` for install steps. It works best on X11;
 on Wayland and WSL it can't see other apps' windows, so "done" times out instead of waiting.
 
+## Android
+
+`claudetop-<version>.apk` on every release is a companion app: Claude Code stays on your PC, and
+the phone follows it over your Wi-Fi. The little Claude floats along the bottom of the phone's
+screen over other apps (it's the same page as on the desktop, `src/renderer.js`, in a WebView), and
+a notification comes when Claude Code needs you or is done while you're not looking at it on the PC.
+
+Pair it from the PC's right-click menu: **Android phone → Pair a phone…** shows a 6-digit code; the
+app finds the PC on the network (or takes its address) and asks for the code. See
+`website/android.html` for the user guide.
+
+How it works: `src/phone-bridge.js` runs only while a phone is paired or pairing is open. It answers
+UDP broadcasts on port 47048 and serves the sessions over HTTP on port 47047 (`/pair` with the code,
+then server-sent events on `/events` with the phone's token). Only the window-in-front's title is
+held back unless it looks like Claude Code's. The Android project is in `android/` (plain Java, no
+libraries); its build copies `src/index.html`, `renderer.js` and `style.css` in and puts
+`android/app/src/main/assets/claude/android-shim.js` in front of them in place of Electron.
+
+```sh
+npm run dist:android    # -> dist/claudetop-<version>.apk (needs the Android SDK and the release key)
+```
+
+The release key (`android/claudetop-release.jks` and `android/keystore.properties`) is not in the
+repository. Keep a backup: phones only take updates signed with the same key.
+
 ## Build the installer
 
 ```sh

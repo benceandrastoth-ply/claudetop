@@ -1,6 +1,7 @@
 // Publishes the installer from the last `npm run dist`, everywhere, in one go:
 //   npm run release -- --notes "First change; Second change"
-// 1. Creates the GitHub Release (v<version>) with the Windows installer attached. Publishing it
+// 1. Creates the GitHub Release (v<version>) with the Windows installer (and the Android app from
+//    `npm run dist:android`, if it's built) attached. Publishing it
 //    starts .github/workflows/linux.yml, which builds the AppImage and .deb and attaches them.
 // 2. Puts the version at the top of website/releases.json with all download links.
 // 3. Commits and pushes the release list, which redeploys the website.
@@ -33,6 +34,10 @@ const releases = fs.existsSync(listFile) ? JSON.parse(fs.readFileSync(listFile, 
 const existing = releases.find((r) => r.version === version);
 const releaseNotes = notes || (existing && existing.notes) || [];
 
+const apk = path.join(root, 'dist', `claudetop-${version}.apk`);
+const hasApk = fs.existsSync(apk);
+if (!hasApk) console.log(`No Android app for ${version} (npm run dist:android): releasing without it.`);
+
 const fileName = `claudetop-Setup-${version}.exe`;
 const staged = path.join(site, 'downloads', fileName); // also the upload's file name on GitHub
 fs.mkdirSync(path.dirname(staged), { recursive: true });
@@ -41,6 +46,7 @@ const data = fs.readFileSync(installer);
 
 let file = `downloads/${fileName}`;
 let linux = null;
+let android = null;
 if (!local) {
   if (!repo) throw new Error('Set "repository" in package.json (github:owner/name).');
   const gh = fs.existsSync('C:/Program Files/GitHub CLI/gh.exe') ? 'C:/Program Files/GitHub CLI/gh.exe' : 'gh';
@@ -52,14 +58,15 @@ if (!local) {
   } catch {
     exists = false;
   }
+  const uploads = [staged, ...(hasApk ? [apk] : [])];
   if (exists) {
-    execFileSync(gh, ['release', 'upload', tag, staged, '--clobber', '--repo', repo], { stdio: 'inherit' });
+    execFileSync(gh, ['release', 'upload', tag, ...uploads, '--clobber', '--repo', repo], { stdio: 'inherit' });
   } else {
     // The release's tag (and the Linux build) must be this code, so push it first and pin the
     // tag to this exact commit; otherwise the tag lands on whatever main was before.
     execFileSync('git', ['push'], { cwd: root, stdio: 'inherit' });
     const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
-    execFileSync(gh, ['release', 'create', tag, staged, '--repo', repo, '--target', head, '--title', `claudetop ${version}`, '--notes', body], {
+    execFileSync(gh, ['release', 'create', tag, ...uploads, '--repo', repo, '--target', head, '--title', `claudetop ${version}`, '--notes', body], {
       stdio: 'inherit',
     });
   }
@@ -67,6 +74,7 @@ if (!local) {
   file = `${base}/${fileName}`;
   // Built and attached by the Linux workflow a few minutes after the release is published
   // (names follow "artifactName" in package.json).
+  if (hasApk) android = `${base}/claudetop-${version}.apk`;
   linux = { appimage: `${base}/claudetop-${version}-x86_64.AppImage`, deb: `${base}/claudetop-${version}-amd64.deb` };
 }
 
@@ -77,6 +85,7 @@ const entry = {
   date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`, // local date
   file,
   ...(linux ? { linux } : {}),
+  ...(android ? { android } : {}),
   size: data.length,
   sha256: crypto.createHash('sha256').update(data).digest('hex'),
   notes: releaseNotes,
