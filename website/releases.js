@@ -1,5 +1,22 @@
 window.RELEASES = [
   {
+    "version": "0.9.0",
+    "date": "2026-11-02",
+    "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.9.0/claudetop-Setup-0.9.0.exe",
+    "linux": {
+      "appimage": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.9.0/claudetop-0.9.0-x86_64.AppImage",
+      "deb": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.9.0/claudetop-0.9.0-amd64.deb"
+    },
+    "android": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.9.0/claudetop-0.9.0.apk",
+    "size": 82007655,
+    "sha256": "6fd30354ff3771c73535291943c8845c4dd79b2eabb68aed3e9e3b787b7b1e76",
+    "notes": [
+      "New: claudetop for Android. The little Claude floats along the bottom of your phone's screen and follows Claude Code on your PC over your Wi-Fi.",
+      "Your phone gets a notification when Claude Code needs you or is done while you're away from the PC.",
+      "On the PC, pair a phone from the right-click menu: Android phone, then Pair a phone."
+    ]
+  },
+  {
     "version": "0.8.3",
     "date": "2026-10-25",
     "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.8.3/claudetop-Setup-0.8.3.exe",
