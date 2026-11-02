@@ -333,3 +333,24 @@ body.agent-mode {
 .foot { padding: 40px 0 56px; background: var(--taskbar); border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
 .foot p { margin: 0 0 6px; }
 .foot .links a { margin-right: 16px; }
+
+/* the wardrobe: every hat, and every little thing */
+.hats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 900px) { .hats { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 640px) { .hats { grid-template-columns: repeat(2, 1fr); } }
+.hat-card {
+  width: 100%; height: 100%; display: flex; flex-direction: column; gap: 4px; padding: 14px 14px 16px;
+  text-align: left; font: inherit; color: inherit; cursor: pointer;
+  background: var(--desk-deep); border: 1px solid var(--line); border-radius: 12px;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.hat-card:hover, .hat-card:focus-visible { border-color: var(--accent); transform: translateY(-2px); }
+.hat-card .mini { position: relative; height: 84px; margin-bottom: 4px; }
+.hat-card .mini .claude { left: 50%; margin-left: -48px; }
+.hat-card b { font-weight: 600; }
+.hat-card span { color: var(--muted); font-size: 0.92rem; }
+.spoilers { margin-top: 40px; }
+.tricks { margin: 0 0 16px; padding: 0; list-style: none; columns: 2; column-gap: 48px; }
+.tricks li { break-inside: avoid; padding: 6px 0; color: var(--muted); font-size: 0.95rem; }
+.tricks b { color: var(--paper); font-weight: 600; margin-right: 4px; }
+@media (max-width: 760px) { .tricks { columns: 1; } }

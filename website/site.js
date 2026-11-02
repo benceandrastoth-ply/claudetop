@@ -445,3 +445,65 @@ function tick(t) {
 
 setState('working');
 requestAnimationFrame(tick);
+
+// ---------- the wardrobe: every hat, and every little thing ----------
+const WARDROBE = [
+  ['none', 'No hat', 'Walks. Slashes a bad tab with a red line.'],
+  ['hard', 'Hard hat', 'Walks. Throws the hat at the tab, then fetches it.'],
+  ['propeller', 'Propeller beanie', 'The propeller spins. Flies up to bonk the tab and loses the hat.'],
+  ['miner', 'Miner hat', 'Digs and tunnels instead of walking. Whacks the tab from the ceiling.'],
+  ['cowboy', 'Cowboy hat', 'Rides a horse. Lassos the tab. Yeehaw.'],
+  ['wizard', 'Wizard hat', 'Teleports. Turns the tab into a frog.'],
+  ['pirate', 'Pirate hat', 'Sails a little boat. Fires a cannon at the tab.'],
+  ['astronaut', 'Astronaut helmet', 'Low-gravity hops. Launches the tab into space.'],
+  ['ninja', 'Ninja headband', 'Dashes in a blur. A throwing star for the tab.'],
+  ['crown', 'Crown', 'Walks slowly, in a cape. A guard spears the tab.'],
+  ['chef', 'Chef hat', 'Rolls on a giant meatball. A cream pie to the tab.'],
+  ['agent47', 'Agent 47', 'Suit, red tie, barcode. Sneaks at 47 px/s. A rubber duck for the tab.'],
+];
+const hatGrid = document.getElementById('hat-grid');
+for (const [id, name, text] of WARDROBE) {
+  const li = document.createElement('li');
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'hat-card';
+  const mini = document.createElement('div');
+  mini.className = 'mini';
+  mini.appendChild(makeClaude(`working ${id === 'none' ? '' : `hat-${id}`} ${HATS.includes(id) ? 'hat-on' : ''}`));
+  button.appendChild(mini);
+  button.insertAdjacentHTML('beforeend', `<b>${name}</b><span>${text}</span>`);
+  button.addEventListener('click', () => {
+    const radio = document.querySelector(`#hat-picker input[value="${id}"]`);
+    if (radio) radio.checked = true;
+    setHat(id);
+    document.getElementById('top').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+  });
+  li.appendChild(button);
+  hatGrid.appendChild(li);
+}
+
+const TRICKS = [
+  ['Click', 'brings up the terminal that session runs in'],
+  ['Double-click', 'pets it (ten clicks in a row is too many)'],
+  ['Scroll over it', 'changes hats'],
+  ['Drag it up', 'lifts it; let go and it drops. Fling it and it bounces off the edges'],
+  ['Props', 'a magnifying glass, a pencil, a terminal or a book, depending on the job'],
+  ['10 minutes on one task', 'coffee'],
+  ['30 minutes', 'a sleeping bag'],
+  ['Three failed tool calls', 'flips a table (then puts it back)'],
+  ['Music', 'headphones on, dancing, notes everywhere'],
+  ['Videos', 'sits down in front of a little TV, and kicks it across your screens if work finishes mid-show'],
+  ['Another AI in front', 'bursts into tears'],
+  ['Panic when done', 'sprints across every monitor until you come back'],
+  ['Fullscreen game', 'hides on that screen, grabs a controller on the others'],
+  ['Midnight to 5 a.m.', 'a nightcap, yawns, and tells you to sleep'],
+  ['Your birthday', 'party hat and confetti'],
+  ['Seasons', 'snow, a Halloween pumpkin, a Santa hat, New Year fireworks, a Hungarian cockade'],
+  ['Resting a while', 'reads the paper, juggles or snores'],
+  ['Other sessions', 'a smaller Claude each, in its own colour and hat'],
+  ['Hitman running', 'becomes Agent 47, with disguises and a mission rating after each job'],
+  ['Phone', 'the Android app floats a Claude over your apps and buzzes when it needs you'],
+];
+document.getElementById('trick-list').innerHTML = TRICKS.map(
+  ([what, does]) => `<li><b>${escapeHtml(what)}</b> ${escapeHtml(does)}</li>`
+).join('');
