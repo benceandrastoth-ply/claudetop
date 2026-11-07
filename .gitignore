@@ -3,3 +3,7 @@ dist/
 # Installers go to GitHub Releases, not the repository.
 website/downloads/
 *.log
+# Copied from src/ by scripts/build-playground.js (the pages workflow runs it on deploy).
+website/claude-frame/index.html
+website/claude-frame/renderer.js
+website/claude-frame/style.css

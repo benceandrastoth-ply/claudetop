@@ -176,6 +176,7 @@ p { margin: 0 0 1em; }
 .block { padding: 96px 0; }
 .block.alt { background: var(--desk-deep); }
 .intro { color: var(--muted); max-width: 40em; margin-bottom: 40px; }
+.intro a, .try a { color: var(--accent); }
 
 .split { display: grid; grid-template-columns: 1fr 1.1fr; gap: 56px; align-items: start; }
 .split > div > p { max-width: 32em; color: var(--paper); opacity: 0.9; }

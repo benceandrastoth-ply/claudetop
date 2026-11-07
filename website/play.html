@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>claudetop playground: every little thing, live</title>
+  <meta name="description" content="The real claudetop, running in your browser. Make Claude Code work, finish, run out of credits; try every hat, every season and every easter egg.">
+  <meta property="og:title" content="claudetop playground">
+  <meta property="og:description" content="The real claudetop, running in your browser. Try every state, hat, season and easter egg.">
+  <link rel="icon" href="favicon.ico">
+  <link rel="stylesheet" href="fonts/fonts.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="play.css">
+</head>
+<body class="play-page">
+  <a class="skip" href="#controls">Skip to the controls</a>
+  <nav class="topnav" aria-label="Main">
+    <a class="wordmark" href="./">claudetop</a>
+    <ul>
+      <li><a href="./#wardrobe">Hats</a></li>
+      <li><a href="./#setup">Setup</a></li>
+      <li><a href="./#releases">Download</a></li>
+      <li><a href="./">Back to the site</a></li>
+    </ul>
+  </nav>
+
+  <header class="wrap play-head">
+    <h1>The playground</h1>
+    <p class="lede">
+      This is the real claudetop: the same code the app runs, on two pretend screens. Use the buttons to
+      make things happen that normally take a while, a certain date or another program. Most of them are
+      different in every hat.
+    </p>
+  </header>
+
+  <div class="stick">
+  <div class="screens" id="screens" aria-label="Two pretend screens with Claude on them">
+    <div class="monitor m1" id="m1">
+      <span class="screen-label">Claude's screen</span>
+      <div class="window terminal" id="terminal" role="button" tabindex="0" aria-label="Claude Code in a terminal. Click to switch to it.">
+        <div class="titlebar"><span class="glyph" id="term-glyph">✳</span> <span id="term-title">my-app</span><i></i><i></i><i></i></div>
+        <div class="term-body">
+          <div class="muted">~/code/my-app</div>
+          <div>&gt; make the login page less sad</div>
+          <div id="term-line"></div>
+        </div>
+      </div>
+      <div class="taskbar-strip"><span class="start"></span><span class="tray-media" id="tray-media"></span><span class="clock" id="clock1"></span></div>
+      <div class="game" id="game1" hidden><b>PIXEL KART</b><span>LAP 2/3</span><i class="road"></i></div>
+    </div>
+    <div class="monitor m2" id="m2">
+      <span class="screen-label">Your other screen</span>
+      <div class="window browser" id="browser" role="button" tabindex="0" aria-label="A web browser. Click to switch to it.">
+        <div class="tabs"><span class="tab" id="tab"><span id="tab-title">New tab</span><b aria-hidden="true">×</b></span><span class="tab-new">+</span></div>
+        <div class="address" id="address">Search or type a web address</div>
+        <div class="page" id="page"></div>
+      </div>
+      <div class="taskbar-strip"><span class="start"></span><span class="clock" id="clock2"></span></div>
+      <div class="game" id="game2" hidden><b>PIXEL KART</b><span>LAP 2/3</span><i class="road"></i></div>
+    </div>
+    <iframe id="frame" src="claude-frame/index.html" title="claudetop, running live"></iframe>
+  </div>
+  <p class="wrap note" id="note" role="status" aria-live="polite">Press anything below. Claude reacts the way it does in the app.</p>
+  </div>
+
+  <p class="wrap how" id="how">
+    Hover over Claude to see its sessions. Click it to go back to Claude Code, double-click to pet it,
+    scroll over it to change hats, or pick it up and throw it. Right-click for the settings.
+  </p>
+
+  <main class="wrap controls" id="controls">
+    <section class="panel">
+      <h2>Claude Code is…</h2>
+      <div class="row" data-group="state">
+        <button type="button" data-state="working" aria-pressed="true">Working</button>
+        <button type="button" data-state="waiting">Waiting for you</button>
+        <button type="button" data-state="done">Done</button>
+        <button type="button" data-state="error">Stopped with an error</button>
+        <button type="button" data-state="nocredit">Out of credits</button>
+        <button type="button" data-state="resting">Idle</button>
+      </div>
+      <div class="row">
+        <button type="button" class="go" id="go-claude">Go back to Claude Code</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>While it works</h2>
+      <div class="row" data-group="tool">
+        <button type="button" data-tool="Grep">Searching</button>
+        <button type="button" data-tool="Edit" aria-pressed="true">Editing</button>
+        <button type="button" data-tool="Bash">Running commands</button>
+        <button type="button" data-tool="Read">Reading</button>
+        <button type="button" data-tool="">Thinking</button>
+      </div>
+      <div class="row" data-group="length">
+        <button type="button" data-minutes="0" aria-pressed="true">Just started</button>
+        <button type="button" data-minutes="11">10 minutes in</button>
+        <button type="button" data-minutes="31">30 minutes in</button>
+      </div>
+      <div class="row">
+        <button type="button" id="rage">Three failed tool calls</button>
+        <button type="button" id="add-session">Start another session</button>
+        <button type="button" id="remove-session" disabled>Close one</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Hats</h2>
+      <div class="row" data-group="hat" id="hats"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Agent 47</h2>
+      <div class="row" data-group="outfit">
+        <button type="button" data-outfit="" aria-pressed="true">The job decides</button>
+        <button type="button" data-outfit="chef">Chef</button>
+        <button type="button" data-outfit="mechanic">Mechanic</button>
+        <button type="button" data-outfit="flamingo">The rare one</button>
+      </div>
+      <div class="row">
+        <button type="button" id="hitman" aria-pressed="false">Hitman is running</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>On your computer</h2>
+      <div class="row">
+        <button type="button" id="music" aria-pressed="false">Play music</button>
+        <button type="button" id="video" aria-pressed="false">Watch a video</button>
+        <button type="button" id="other-ai">Open another AI</button>
+        <button type="button" id="lockin">Open a tab you shouldn't</button>
+      </div>
+      <div class="row">
+        <button type="button" id="game-here" aria-pressed="false">A game, fullscreen on Claude's screen</button>
+        <button type="button" id="game-there" aria-pressed="false">A game on your other screen</button>
+        <button type="button" id="call" aria-pressed="false">You're on a call</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>The calendar</h2>
+      <div class="row" data-group="date" id="dates"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Little things</h2>
+      <div class="row">
+        <button type="button" id="pet">Pet</button>
+        <button type="button" id="annoy">Click it ten times</button>
+        <button type="button" id="throw">Throw it</button>
+        <button type="button" data-idle="newspaper">Read the paper</button>
+        <button type="button" data-idle="juggle">Juggle</button>
+        <button type="button" data-idle="snore">Snore</button>
+        <button type="button" data-idle="lasso">Twirl a lasso</button>
+        <button type="button" id="achievement">Unlock an achievement</button>
+      </div>
+    </section>
+
+    <section class="panel" id="settings">
+      <h2>Settings</h2>
+      <p class="hint">In the app, these are in the right-click menu.</p>
+      <div class="row" data-group="mode">
+        <button type="button" data-mode="walk" aria-pressed="true">Walk around</button>
+        <button type="button" data-mode="fixed">Stay in place</button>
+      </div>
+      <div class="row">
+        <button type="button" data-flag="panicWhenDone" aria-pressed="true">Panic when done</button>
+        <button type="button" data-flag="roam" aria-pressed="false">Roam across all screens</button>
+        <button type="button" data-flag="sounds" aria-pressed="true">Sounds</button>
+        <button type="button" data-flag="dnd" aria-pressed="false">Do not disturb</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      <p><a href="./">claudetop</a> · <a href="./#releases">Download it</a> · <a href="privacy.html">Privacy</a></p>
+      <p class="legal">
+        An unofficial fan project, not affiliated with or endorsed by Anthropic.
+        Claude and Claude Code are trademarks of Anthropic.
+      </p>
+    </div>
+  </footer>
+
+  <script src="play.js"></script>
+</body>
+</html>

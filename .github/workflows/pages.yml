@@ -1,10 +1,16 @@
-# Publishes website/ to GitHub Pages whenever it changes on main.
+# Publishes website/ to GitHub Pages whenever it, or the Claude its playground runs, changes on main.
 name: Website
 
 on:
   push:
     branches: [main]
-    paths: ['website/**', '.github/workflows/pages.yml']
+    paths:
+      - 'website/**'
+      - 'src/index.html'
+      - 'src/renderer.js'
+      - 'src/style.css'
+      - 'scripts/build-playground.js'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
@@ -25,6 +31,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: Copy the app's Claude into the playground
+        run: node scripts/build-playground.js
       - uses: actions/upload-pages-artifact@v3
         with:
           path: website
