@@ -1,5 +1,23 @@
 window.RELEASES = [
   {
+    "version": "0.9.1",
+    "date": "2026-11-08",
+    "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.9.1/claudetop-Setup-0.9.1.exe",
+    "linux": {
+      "appimage": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.9.1/claudetop-0.9.1-x86_64.AppImage",
+      "deb": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.9.1/claudetop-0.9.1-amd64.deb",
+      "arch": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.9.1/claudetop-0.9.1-x86_64.pkg.tar.xz"
+    },
+    "android": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.9.1/claudetop-0.9.1.apk",
+    "size": 82007918,
+    "sha256": "b9d9f26f2fd0ba04f384fea4d375fb1b3d445cb31b0625964d5de256c7c0bb8d",
+    "notes": [
+      "New: an Arch Linux package (claudetop-0.9.1-x86_64.pkg.tar.xz). Install it with sudo pacman -U",
+      "the Linux guide on the site has the steps.",
+      "On Linux, the first launch now gives the install command for missing extra tools in your distribution's terms (apt, pacman or dnf)."
+    ]
+  },
+  {
     "version": "0.9.0",
     "date": "2026-11-02",
     "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.9.0/claudetop-Setup-0.9.0.exe",
