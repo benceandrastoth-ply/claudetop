@@ -77,12 +77,7 @@
       ],
       "fpm": [
         "--architecture", "x86_64",
-        "--pacman-compression", "xz",
-        "--pacman-optional-depends", "libappindicator-gtk3: tray icon on some desktops",
-        "--pacman-optional-depends", "xorg-xprop: see which window is in front",
-        "--pacman-optional-depends", "xorg-xwininfo: notice fullscreen games",
-        "--pacman-optional-depends", "xdotool: Lock-in mode and click to open Claude Code",
-        "--pacman-optional-depends", "playerctl: dancing to music and watching videos"
+        "--pacman-compression", "xz"
       ]
     }
   }

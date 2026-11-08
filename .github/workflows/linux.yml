@@ -38,3 +38,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "${{ github.event.release.tag_name }}" dist/*.AppImage dist/*.deb dist/*.pkg.tar.xz --clobber
+
+  # Installs the Arch package on a real Arch Linux and checks every library it needs is there.
+  arch-check:
+    needs: build
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: claudetop-linux
+      - run: pacman -Syu --noconfirm
+      - run: pacman -U --noconfirm ./*.pkg.tar.xz
+      - name: No missing libraries
+        run: |
+          if ldd /opt/claudetop/claudetop | grep 'not found'; then exit 1; fi
+          test -x /usr/bin/claudetop
+          test -f /usr/share/applications/claudetop.desktop
+      - run: pacman -R --noconfirm claudetop && test ! -e /usr/bin/claudetop
