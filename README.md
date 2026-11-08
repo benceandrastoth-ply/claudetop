@@ -73,6 +73,10 @@ the session or its title looks like a Claude Code title (`✳ topic`, `◑ topic
   flamingo), and a mission rating after each job: Silent Assassin if it needed no permission prompts.
 - **Show on screen**: pick which monitor it lives on (it walks over).
 - **Roam across all screens**: wander freely over every monitor, hopping across the edges.
+- **Walk on top of windows**: the whole screen is Claude's. It jumps up onto windows that aren't
+  maximized, walks along their tops, rides along when you drag one, bumps into taller ones, and
+  falls off the edge (or when you close the window). Without a taskbar, it stands on the bottom
+  edge of the screen.
 
 ## Lock-in mode
 
@@ -97,8 +101,12 @@ click **More info → Run anyway**.
 ## Linux
 
 AppImage, .deb and Arch Linux (`.pkg.tar.xz`) builds are attached to every release (built by `.github/workflows/linux.yml`
-when a release is published). See `website/linux.html` for install steps. It works best on X11;
-on Wayland and WSL it can't see other apps' windows, so "done" times out instead of waiting.
+when a release is published). See `website/linux.html` for install steps. It works best on X11
+and on Hyprland, which tells claudetop about every window (`src/platform-hyprland.js`, over its
+IPC socket): there it floats and pins itself on every workspace and stands on a bottom bar like
+waybar. On other Wayland desktops and WSL it can't see other apps' windows, so "done" times out
+instead of waiting. `.github/workflows/test.yml` tests the Hyprland code against a fake Hyprland
+socket and runs walking on windows on a virtual X server.
 
 ## Android
 

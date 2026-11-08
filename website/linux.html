@@ -70,6 +70,15 @@ sudo pacman -S xorg-xprop xorg-xwininfo xdotool playerctl</code></pre>
     </ul>
     <p>Everything else, including the hats, panic mode, dancing and the TV, works the same.</p>
 
+    <h2>Hyprland</h2>
+    <p>On Hyprland none of that applies: Hyprland tells claudetop about every window, Wayland apps included, so it knows when you're in your terminal, and Lock-in mode works in any browser. You don't need xprop, xwininfo or xdotool there. Nothing to set up either:</p>
+    <ul>
+      <li>claudetop floats its window and pins it, so the little Claude stays put on every workspace, with no border, shadow or tiling.</li>
+      <li>With a bar at the bottom (waybar or similar), Claude stands on it. With no bar, or one at the top, it stands on the bottom edge of the screen.</li>
+      <li><b>Walk on top of windows</b> in the right-click menu works with floating and tiled windows. A window that fills the screen top to bottom has no room above it, so split your workspace or float a window to give Claude somewhere to climb.</li>
+      <li>If you've set <code>ELECTRON_OZONE_PLATFORM_HINT</code> to <code>auto</code> or <code>wayland</code>, claudetop restarts itself through XWayland, which it needs. Keep XWayland on (it is by default).</li>
+    </ul>
+
     <h2>Start at login</h2>
     <p>Right-click the little Claude and tick <b>Start at login</b>. That adds it to <code>~/.config/autostart</code>.</p>
 
