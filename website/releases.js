@@ -1,5 +1,22 @@
 window.RELEASES = [
   {
+    "version": "0.10.1",
+    "date": "2026-11-09",
+    "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.10.1/claudetop-Setup-0.10.1.exe",
+    "linux": {
+      "appimage": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.10.1/claudetop-0.10.1-x86_64.AppImage",
+      "deb": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.10.1/claudetop-0.10.1-amd64.deb",
+      "arch": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.10.1/claudetop-0.10.1-x86_64.pkg.tar.xz"
+    },
+    "android": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.10.1/claudetop-0.10.1.apk",
+    "size": 82016539,
+    "sha256": "36ed81473dbbdec04195de95438f7e5c861367035561fb8d29c2ecdcb5884afc",
+    "notes": [
+      "Fixed: with Walk on top of windows on, Claude could get stuck in mid-air on a window hidden behind a maximized one (for example after you dragged it up and let go). Maximized and fullscreen windows now hide what's behind them.",
+      "Only windows in front of the one Claude stands on block its way now."
+    ]
+  },
+  {
     "version": "0.10.0",
     "date": "2026-11-09",
     "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.10.0/claudetop-Setup-0.10.0.exe",
