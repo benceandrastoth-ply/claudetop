@@ -83,7 +83,7 @@ const shot = (name) => execFileSync('import', ['-window', 'root', path.join(out,
     shot('2-on-window');
 
     // Take that window away: Claude falls back to the floor.
-    execFileSync('sh', ['-c', 'xdotool search --name "^right$" windowunmap || xkill -id $(xwininfo -name right | sed -n "s/.*Window id: \\(0x[0-9a-f]*\\).*/\\1/p")'], { stdio: 'inherit' });
+    execFileSync('pkill', ['-f', 'xterm .*-T right']);
     await wait(2500);
     const after = await evaluate('({ on: walker.on, level: walker.level, platforms: platforms.length })');
     console.log('after closing it:', after);

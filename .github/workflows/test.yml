@@ -22,7 +22,7 @@ jobs:
       - name: Install a virtual X desktop
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb openbox xcompmgr xterm x11-utils xdotool imagemagick
+          sudo apt-get install -y xvfb openbox xcompmgr xterm x11-utils imagemagick
       - name: Walking on windows under X11
         run: |
           Xvfb :99 -screen 0 1920x1080x24 &
