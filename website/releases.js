@@ -1,5 +1,24 @@
 window.RELEASES = [
   {
+    "version": "0.10.0",
+    "date": "2026-11-09",
+    "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.10.0/claudetop-Setup-0.10.0.exe",
+    "linux": {
+      "appimage": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.10.0/claudetop-0.10.0-x86_64.AppImage",
+      "deb": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.10.0/claudetop-0.10.0-amd64.deb",
+      "arch": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.10.0/claudetop-0.10.0-x86_64.pkg.tar.xz"
+    },
+    "android": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.10.0/claudetop-0.10.0.apk",
+    "size": 82015929,
+    "sha256": "2218aa8e425e959c2d918fd2de234d2fe35bfbf4e16d43d7978d79706d710829",
+    "notes": [
+      "New: Walk on top of windows (right-click menu). Claude gets the whole screen, jumps up onto windows that aren't maximized, walks along their tops, rides along when you drag one and falls off the edge.",
+      "Hyprland support: claudetop floats and pins itself on every workspace without a border, stands on a bottom bar like waybar, and sees Wayland apps, so it knows when you're in your terminal and Lock-in mode works in any browser.",
+      "With no taskbar or panel, Claude stands on the bottom edge of the screen.",
+      "If Electron is set to run on Wayland, claudetop restarts itself through XWayland, which it needs."
+    ]
+  },
+  {
     "version": "0.9.1",
     "date": "2026-11-08",
     "file": "https://github.com/benceandrastoth-ply/claudetop/releases/download/v0.9.1/claudetop-Setup-0.9.1.exe",
