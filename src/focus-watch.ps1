@@ -3,7 +3,8 @@
 # "LOCKIN`t<hwnd>`t<windowRect>`t<tabRect>" (physical pixels "l,t,r,b"; tabRect may be empty).
 # claudetop animates, then asks for the tab to be closed by writing "close <hwnd>" to the
 # command file. With walking on windows on, every window you can see is reported as
-# "WINDOWS`t<hwnd>,l,t,r,b;..." (front to back, physical pixels) whenever one moves.
+# "WINDOWS`t<hwnd>,l,t,r,b,stand;..." (front to back, physical pixels, stand 0 for maximized
+# windows, which hide what's behind them but have no top to stand on) whenever one moves.
 # main.js fills in the __PLACEHOLDERS__ before running this.
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Add-Type -ReferencedAssemblies Accessibility @"
@@ -72,8 +73,9 @@ public static class Tabs {
     return "";
   }
 }
-// The windows you'd see in Alt+Tab that are on screen (not minimized, maximized or on another
-// desktop), front to back, as "hwnd,l,t,r,b;" with their visible frame (no invisible borders).
+// The windows you'd see in Alt+Tab that are on screen (not minimized or on another desktop),
+// front to back, as "hwnd,l,t,r,b,stand;" with their visible frame (no invisible borders).
+// stand is 0 for maximized windows: nothing stands on them, but they hide what's behind.
 public static class Wins {
   delegate bool EnumProc(IntPtr h, IntPtr l);
   [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc f, IntPtr l);
@@ -91,7 +93,7 @@ public static class Wins {
     var sb = new StringBuilder();
     var cls = new StringBuilder(64);
     EnumWindows((h, l) => {
-      if (!IsWindowVisible(h) || IsIconic(h) || IsZoomed(h)) return true;
+      if (!IsWindowVisible(h) || IsIconic(h)) return true;
       int ex = GetWindowLong(h, -20); // GWL_EXSTYLE
       if ((ex & 0x80) != 0 || (ex & 0x08000000) != 0) return true; // tool window, never activates
       if (GetWindow(h, 4) != IntPtr.Zero && (ex & 0x40000) == 0) return true; // owned popup
@@ -109,7 +111,7 @@ public static class Wins {
       if (DwmGetWindowAttribute(h, 9, out r, 16) != 0) return true; // DWMWA_EXTENDED_FRAME_BOUNDS
       if (r.Right - r.Left < 120 || r.Bottom - r.Top < 60) return true;
       sb.Append(h.ToInt64()).Append(',').Append(r.Left).Append(',').Append(r.Top).Append(',')
-        .Append(r.Right).Append(',').Append(r.Bottom).Append(';');
+        .Append(r.Right).Append(',').Append(r.Bottom).Append(IsZoomed(h) ? ",0;" : ",1;");
       return true;
     }, IntPtr.Zero);
     return sb.ToString();

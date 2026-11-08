@@ -121,8 +121,9 @@ const reservedFor = (displayId) => reserved[displayId] || { l: 0, t: 0, r: 0, b:
 const visibleWorkspaces = (monitors) =>
   new Set(monitors.flatMap((m) => [m.activeWorkspace && m.activeWorkspace.id, m.specialWorkspace && m.specialWorkspace.id]).filter(Boolean));
 
-// Every window you can see, front to back, as Electron rects. Floating windows sit over tiled
-// ones; among floating ones, the most recently focused is on top.
+// Every window you can see, front to back, as Electron rects with stand: false for fullscreen
+// ones (nothing stands on them, but they hide what's behind). Fullscreen windows are in front,
+// then floating ones (the most recently focused on top), then tiled ones.
 async function listWindows(displays, ownPid) {
   const [clients, monitors] = await Promise.all([json('clients'), json('monitors')]);
   if (!Array.isArray(clients) || !Array.isArray(monitors)) return [];
@@ -130,9 +131,8 @@ async function listWindows(displays, ownPid) {
   const shown = visibleWorkspaces(monitors);
   return clients
     .filter((c) => c.mapped && !c.hidden && c.pid !== ownPid && !/^claudetop$/i.test(c.class || '') && shown.has(c.workspace && c.workspace.id))
-    .filter((c) => !c.fullscreen) // fullscreen (and Hyprland's "maximized") have no top to stand on
-    .sort((a, b) => Number(!!b.floating) - Number(!!a.floating) || a.focusHistoryID - b.focusHistoryID)
-    .map((c) => ({ id: c.address, ...map.toDip(c.at[0], c.at[1], c.size[0], c.size[1]) }));
+    .sort((a, b) => Number(!!b.fullscreen) - Number(!!a.fullscreen) || Number(!!b.floating) - Number(!!a.floating) || a.focusHistoryID - b.focusHistoryID)
+    .map((c) => ({ id: c.address, ...map.toDip(c.at[0], c.at[1], c.size[0], c.size[1]), stand: !c.fullscreen }));
 }
 
 async function activeWindow(displays) {

@@ -17,6 +17,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Which window tops Claude can stand on
+        run: node test/platforms.test.js
       - name: Hyprland (fake compositor socket)
         run: node test/hyprland.test.js
       - name: Install a virtual X desktop

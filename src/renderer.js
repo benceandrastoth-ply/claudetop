@@ -2595,8 +2595,8 @@ function walkRange() {
 
 // "Walk on top of windows": from main, the top edges Claude can stand on and every window's
 // outline (all window-relative, heights measured up from the window's bottom like ground).
-let platforms = []; // [{ id, left, right, ground }]
-let walls = []; // [{ id, left, right, top, bottom }]
+let platforms = []; // [{ id, z, left, right, ground }]  (z: 0 is the front window)
+let walls = []; // [{ id, z, left, right, top, bottom }]
 const STEP = 24; // a ledge this much higher is just stepped up onto
 
 // What Claude would stand on at x: the monitor's floor, or the highest window top it can reach
@@ -2620,11 +2620,14 @@ function groundAt(x, ref) {
   return ref === undefined ? surfaceAt(x).ground : surfaceAt(x, ref, null).ground;
 }
 
-// Standing on a window, about to walk into the side of a taller one: that's a wall.
+// Standing on a window, about to walk into the side of a taller one in front of it: that's a
+// wall. (Windows behind it don't count: Claude just walks off the edge, in front of them.)
 function wallAhead(nx) {
   if (walker.on === null || surfaceAt(nx).id === walker.on) return false;
+  const here = platforms.find((p) => p.id === walker.on);
+  const z = here ? here.z : Infinity;
   const c = nx + WIDTH / 2;
-  return walls.some((w) => w.id !== walker.on && c >= w.left && c < w.right && w.top > walker.level + STEP && w.bottom < walker.level + 40);
+  return walls.some((w) => w.id !== walker.on && w.z < z && c >= w.left && c < w.right && w.top > walker.level + STEP && w.bottom < walker.level + 40);
 }
 
 // Now and then, jump up (or across) onto another window within reach.

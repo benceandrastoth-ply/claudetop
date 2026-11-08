@@ -11,6 +11,7 @@ const os = require('os');
 const path = require('path');
 const hooksSetup = require('./hooks-setup');
 const { createBridge } = require('./phone-bridge');
+const { computePlatforms } = require('./platforms');
 
 const isLinux = process.platform === 'linux';
 const linux = isLinux ? require('./platform-linux') : null;
@@ -339,8 +340,8 @@ function watchFocus() {
       if (line.startsWith('WINDOWS\t')) {
         setWindows(
           line.slice(8).split(';').filter(Boolean).map((w) => {
-            const [id, ...rect] = w.split(',');
-            return { id, ...parseRect(rect.join(',')) };
+            const [id, l, t, r, b, stand] = w.split(',');
+            return { id, ...parseRect([l, t, r, b].join(',')), stand: stand !== '0' };
           }).filter((w) => w.width)
         );
         continue;
@@ -577,8 +578,7 @@ async function watchHyprlandBars() {
 
 // ---------- walking on windows ----------
 // The page gets the top edge of every window it can stand on (the parts no window in front
-// covers) and every window's outline, so it can tell a ledge from a wall.
-const HEADROOM = 120; // a window this close to the top of the screen has no room above it
+// covers) and every window's outline, so it can tell a ledge from a wall (src/platforms.js).
 let lastPlatforms = '';
 
 function setWindows(list) {
@@ -589,30 +589,9 @@ function setWindows(list) {
 function sendPlatforms() {
   if (!win || !winBounds) return;
   const list = walksOnWindows() ? windowsSeen : [];
-  const winX = winBounds.x;
-  const bottom = winBounds.y + winBounds.height;
-  const platforms = [];
-  const walls = [];
-  const cut = (pieces, from, to) =>
-    pieces.flatMap(([l, r]) => (to <= l || from >= r ? [[l, r]] : [[l, from], [to, r]].filter(([a, b]) => b - a > 0)));
-  list.forEach((w, i) => {
-    const d = screen.getDisplayNearestPoint({ x: Math.round(w.x + w.width / 2), y: Math.round(w.y) });
-    const a = areaOf(d);
-    if (w.y - a.y < HEADROOM || w.y > floorOf(d) - 40) return; // no room above it, or down at the floor
-    let pieces = [[Math.max(w.x, a.x), Math.min(w.x + w.width, a.x + a.width)]];
-    for (const front of list.slice(0, i)) {
-      if (front.y <= w.y + 2 && front.y + front.height > w.y - 2) pieces = cut(pieces, front.x, front.x + front.width);
-    }
-    for (const [l, r] of pieces) {
-      if (r - l >= 100) platforms.push({ id: w.id, left: Math.round(l - winX), right: Math.round(r - winX), ground: Math.round(bottom - w.y) });
-    }
-    walls.push({
-      id: w.id,
-      left: Math.round(w.x - winX),
-      right: Math.round(w.x + w.width - winX),
-      top: Math.round(bottom - w.y),
-      bottom: Math.round(bottom - w.y - w.height),
-    });
+  const { platforms, walls } = computePlatforms(list, winBounds, (x, y) => {
+    const d = screen.getDisplayNearestPoint({ x: Math.round(x), y: Math.round(y) });
+    return { area: areaOf(d), floor: floorOf(d) };
   });
   const key = JSON.stringify([platforms, walls]);
   if (key === lastPlatforms) return;

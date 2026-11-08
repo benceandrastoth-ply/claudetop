@@ -96,7 +96,9 @@ async function windowRect(id) {
 }
 
 // Every normal window on the current desktop, front to back, in X11 pixels:
-// [{ id, x, y, width, height }] with the window manager's title bar, without GTK's shadows.
+// [{ id, x, y, width, height, stand }] with the window manager's title bar, without GTK's
+// shadows. stand is false for maximized and fullscreen windows: nothing stands on them, but
+// they hide what's behind them.
 async function listWindowsX11(ownPid) {
   const root = await run('xprop', ['-root', '_NET_CLIENT_LIST_STACKING', '_NET_CURRENT_DESKTOP']);
   const list = /_NET_CLIENT_LIST_STACKING\(WINDOW\): window id # (.*)$/m.exec(root);
@@ -121,14 +123,15 @@ async function listWindowsX11(ownPid) {
       const props = await run('xprop', [
         '-id', id, '_NET_WM_STATE', '_NET_WM_DESKTOP', '_NET_WM_WINDOW_TYPE', '_NET_WM_PID', '_NET_FRAME_EXTENTS', '_GTK_FRAME_EXTENTS',
       ]);
-      if (/_NET_WM_STATE_(HIDDEN|FULLSCREEN)/.test(props)) return null;
-      if (/_NET_WM_STATE_MAXIMIZED_VERT/.test(props) && /_NET_WM_STATE_MAXIMIZED_HORZ/.test(props)) return null;
+      if (/_NET_WM_STATE_HIDDEN/.test(props)) return null;
+      const stand = !/_NET_WM_STATE_FULLSCREEN/.test(props) &&
+        !(/_NET_WM_STATE_MAXIMIZED_VERT/.test(props) && /_NET_WM_STATE_MAXIMIZED_HORZ/.test(props));
       const type = /_NET_WM_WINDOW_TYPE\(ATOM\) = ([^,\n]+)/.exec(props);
       if (type && !/_(NORMAL|DIALOG)$/.test(type[1].trim())) return null;
       const d = numbers(props, '_NET_WM_DESKTOP');
       if (d && d[0] !== desktop && d[0] !== 0xffffffff) return null;
       if (ownPid && propNumber(props, '_NET_WM_PID') === ownPid) return null;
-      const r = { id, ...g };
+      const r = { id, ...g, stand };
       const frame = numbers(props, '_NET_FRAME_EXTENTS'); // left, right, top, bottom
       if (frame && frame.length === 4) {
         r.x -= frame[0];
@@ -157,7 +160,7 @@ async function listWindows(getDisplays, ownPid) {
   if (!available.xprop || !available.xwininfo) return [];
   const scale = (displays[0] && displays[0].scaleFactor) || 1;
   return (await listWindowsX11(ownPid)).map((r) => ({
-    id: r.id, x: r.x / scale, y: r.y / scale, width: r.width / scale, height: r.height / scale,
+    id: r.id, x: r.x / scale, y: r.y / scale, width: r.width / scale, height: r.height / scale, stand: r.stand,
   }));
 }
 

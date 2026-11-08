@@ -69,10 +69,11 @@ server.listen(sockPath, async () => {
     assert.deepStrictEqual(hypr.reservedFor(22), { l: 0, t: 40, r: 0, b: 0 });
     console.log('ok  bars: bottom bar on DP-1, top bar on HDMI');
 
-    // windows: front to back, floating first, other workspace + fullscreen + own left out
+    // windows: front to back (fullscreen, then floating, then tiled); other workspace + own left out
     const list = await hypr.listWindows(displays, OWN);
-    assert.deepStrictEqual(list.map((w) => w.id), ['0xb', '0xe', '0xa']);
-    assert.deepStrictEqual(list[1], { id: '0xe', x: 2200, y: 600, width: 400, height: 300 });
+    assert.deepStrictEqual(list.map((w) => w.id), ['0xd', '0xb', '0xe', '0xa']);
+    assert.deepStrictEqual(list[2], { id: '0xe', x: 2200, y: 600, width: 400, height: 300, stand: true });
+    assert.strictEqual(list[0].stand, false); // fullscreen: hides what's behind, nothing to stand on
     console.log('ok  windows:', list.map((w) => `${w.id}@${w.x},${w.y}`).join(' '));
 
     // with force_zero_scaling, Electron sees HDMI at full pixels: coordinates must scale
