@@ -84,6 +84,7 @@ for (const r of releases) {
   if (r.linux) {
     links.push(`<a href="${escapeHtml(r.linux.appimage)}">Linux AppImage</a>`);
     links.push(`<a href="${escapeHtml(r.linux.deb)}">.deb</a>`);
+    if (r.linux.arch) links.push(`<a href="${escapeHtml(r.linux.arch)}">Arch</a>`);
   }
   if (r.android) links.push(`<a href="${escapeHtml(r.android)}">Android</a>`);
   const action = links.length ? links.join('<br>') : '<span class="gone">Installer not archived</span>';

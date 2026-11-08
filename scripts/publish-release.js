@@ -2,7 +2,7 @@
 //   npm run release -- --notes "First change; Second change"
 // 1. Creates the GitHub Release (v<version>) with the Windows installer (and the Android app from
 //    `npm run dist:android`, if it's built) attached. Publishing it
-//    starts .github/workflows/linux.yml, which builds the AppImage and .deb and attaches them.
+//    starts .github/workflows/linux.yml, which builds the AppImage, .deb and Arch package and attaches them.
 // 2. Puts the version at the top of website/releases.json with all download links.
 // 3. Commits and pushes the release list, which redeploys the website.
 // --local skips GitHub and serves the installer from website/downloads/ instead.
@@ -75,7 +75,11 @@ if (!local) {
   // Built and attached by the Linux workflow a few minutes after the release is published
   // (names follow "artifactName" in package.json).
   if (hasApk) android = `${base}/claudetop-${version}.apk`;
-  linux = { appimage: `${base}/claudetop-${version}-x86_64.AppImage`, deb: `${base}/claudetop-${version}-amd64.deb` };
+  linux = {
+    appimage: `${base}/claudetop-${version}-x86_64.AppImage`,
+    deb: `${base}/claudetop-${version}-amd64.deb`,
+    arch: `${base}/claudetop-${version}-x86_64.pkg.tar.xz`,
+  };
 }
 
 const now = new Date();

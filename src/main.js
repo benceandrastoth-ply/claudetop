@@ -995,13 +995,11 @@ function watchCursorLinux() {
 // Linux has no installer wizard, so the first launch asks what the Windows installer asks.
 async function firstRunLinux() {
   if (!isLinux || config.setupDone) return;
-  const missing = linux.missingTools();
+  const hint = linux.installHint();
   const detail = [
     'claudetop adds a few hooks to ~/.claude/settings.json so it can see what Claude Code is doing. ' +
       'You can change this later from its right-click menu.',
-    missing.length
-      ? `\nSome features need tools that aren't installed. On Ubuntu or Debian:\nsudo apt install ${missing.join(' ')}`
-      : '',
+    hint ? `\nSome features need tools that aren't installed. ${hint}` : '',
   ].join('');
   const { response, checkboxChecked } = await dialog.showMessageBox({
     type: 'question',

@@ -2,14 +2,21 @@
 //   - which window is in front (xprop), what's playing (playerctl), closing a tab (xdotool)
 //   - start at login (~/.config/autostart)
 // Works on X11 sessions and on Wayland for apps running through XWayland. Missing tools just
-// switch the matching feature off; missingTools() lists them so the app can say so.
+// switch the matching feature off; installHint() says how to get them.
 
 const { execFile, execFileSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const TOOLS = { xprop: 'x11-utils', xwininfo: 'x11-utils', xdotool: 'xdotool', playerctl: 'playerctl' };
+const TOOLS = ['xprop', 'xwininfo', 'xdotool', 'playerctl'];
+
+// Which package gives each tool, per package manager (a tool not listed is its own package).
+const PACKAGES = {
+  apt: { distro: 'Ubuntu or Debian', install: 'sudo apt install', xprop: 'x11-utils', xwininfo: 'x11-utils' },
+  pacman: { distro: 'Arch', install: 'sudo pacman -S --needed', xprop: 'xorg-xprop', xwininfo: 'xorg-xwininfo' },
+  dnf: { distro: 'Fedora', install: 'sudo dnf install' },
+};
 
 function has(tool) {
   try {
@@ -20,11 +27,16 @@ function has(tool) {
   }
 }
 
-const available = Object.fromEntries(Object.keys(TOOLS).map((t) => [t, has(t)]));
+const available = Object.fromEntries(TOOLS.map((t) => [t, has(t)]));
 
-// Debian/Ubuntu package names for whatever is missing.
-function missingTools() {
-  return [...new Set(Object.keys(TOOLS).filter((t) => !available[t]).map((t) => TOOLS[t]))];
+// How to install whatever is missing on this distribution ("On Arch:\nsudo pacman -S ..."),
+// or '' when nothing is.
+function installHint() {
+  const missing = TOOLS.filter((t) => !available[t]);
+  if (!missing.length) return '';
+  const pm = PACKAGES[Object.keys(PACKAGES).find(has) || 'apt'];
+  const pkgs = [...new Set(missing.map((t) => pm[t] || t))];
+  return `On ${pm.distro}:\n${pm.install} ${pkgs.join(' ')}`;
 }
 
 const run = (cmd, args, timeout = 1500) =>
@@ -233,4 +245,4 @@ function hookCommand(appCommand, reportSource) {
   return `"${node}" "${target}"`;
 }
 
-module.exports = { available, missingTools, startWatcher, startAtLogin, setStartAtLogin, hookCommand };
+module.exports = { available, installHint, startWatcher, startAtLogin, setStartAtLogin, hookCommand };
