@@ -12,8 +12,7 @@ window.RELEASES = [
     "size": 82007918,
     "sha256": "b9d9f26f2fd0ba04f384fea4d375fb1b3d445cb31b0625964d5de256c7c0bb8d",
     "notes": [
-      "New: an Arch Linux package (claudetop-0.9.1-x86_64.pkg.tar.xz). Install it with sudo pacman -U",
-      "the Linux guide on the site has the steps.",
+      "New: an Arch Linux package (claudetop-0.9.1-x86_64.pkg.tar.xz). Install it with sudo pacman -U, and see the Linux guide on the site for the steps.",
       "On Linux, the first launch now gives the install command for missing extra tools in your distribution's terms (apt, pacman or dnf)."
     ]
   },
