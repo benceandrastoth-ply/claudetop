@@ -25,6 +25,7 @@
     lockInClose: noop,
     lockInDone: noop,
     onLayout: on('layout'),
+    onPlatforms: on('platforms'),
     onMedia: on('media'),
     setSpan: noop,
     setIgnoreMouse: noop,

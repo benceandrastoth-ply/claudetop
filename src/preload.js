@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('claudetop', {
   lockInClose: () => ipcRenderer.send('lockin-close'),
   lockInDone: () => ipcRenderer.send('lockin-done'),
   onLayout: (fn) => ipcRenderer.on('layout', (_e, layout) => fn(layout)),
+  onPlatforms: (fn) => ipcRenderer.on('platforms', (_e, p) => fn(p)),
   onMedia: (fn) => ipcRenderer.on('media', (_e, media) => fn(media)),
   setSpan: (span) => ipcRenderer.send('set-span', span),
   setIgnoreMouse: (ignore) => ipcRenderer.send('set-ignore-mouse', ignore),

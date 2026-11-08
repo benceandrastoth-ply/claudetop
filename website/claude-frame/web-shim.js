@@ -28,6 +28,7 @@
     lockInClose: host('lockInClose'),
     lockInDone: host('lockInDone'),
     onLayout: on('layout'),
+    onPlatforms: on('platforms'),
     onMedia: on('media'),
     setSpan: () => {},
     setIgnoreMouse: host('setIgnoreMouse'),

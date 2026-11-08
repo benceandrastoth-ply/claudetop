@@ -46,6 +46,8 @@ const walker = {
   airBottom: null, // set while flying: absolute height instead of standing on a floor
   sink: 0, // px below the floor while digging (miner hat)
   rot: 0, // degrees: upside down from the ceiling, spinning while falling
+  level: 0, // height of whatever Claude stands on (a floor or a window's top), like ground
+  on: null, // the window Claude stands on, or null on the floor
 };
 let burrowing = false; // clip Claude at the floor line, so it disappears into the ground
 
@@ -2132,7 +2134,7 @@ function moveBuddies(t, dt) {
     b.el.classList.toggle('walking', moving);
     b.el.querySelector('.sprite').classList.toggle('flip', b.dir < 0);
     b.el.style.left = `${Math.round(b.x)}px`;
-    b.el.style.bottom = `${4 + groundAt(b.x)}px`;
+    b.el.style.bottom = `${4 + groundAt(b.x, -Infinity)}px`;
   }
 }
 
@@ -2591,12 +2593,82 @@ function walkRange() {
   return { min, max: Math.max(min, max) };
 }
 
-function groundAt(x) {
-  if (!layout) return 0;
+// "Walk on top of windows": from main, the top edges Claude can stand on and every window's
+// outline (all window-relative, heights measured up from the window's bottom like ground).
+let platforms = []; // [{ id, left, right, ground }]
+let walls = []; // [{ id, left, right, top, bottom }]
+const STEP = 24; // a ledge this much higher is just stepped up onto
+
+// What Claude would stand on at x: the monitor's floor, or the highest window top it can reach
+// from height ref (it falls past the ones above). The window it already stands on carries it
+// along wherever that window goes.
+function surfaceAt(x, ref = walker.airBottom !== null ? walker.airBottom - 4 : walker.level, sticky = walker.airBottom === null ? walker.on : null) {
+  if (!layout) return { ground: 0, id: null };
   const center = x + WIDTH / 2;
   const seg = layout.segments.find((s) => center >= s.left && center < s.right);
   if (seg) lastGround = seg.ground; // in a gap between monitors, keep the last floor
-  return lastGround;
+  let best = { ground: lastGround, id: null };
+  for (const p of platforms) {
+    if (center < p.left || center >= p.right || p.ground <= best.ground) continue;
+    if (p.ground <= ref + STEP || p.id === sticky) best = { ground: p.ground, id: p.id };
+  }
+  return best;
+}
+
+// Pass ref = -Infinity for the floor only (the extra Claudes stay down there).
+function groundAt(x, ref) {
+  return ref === undefined ? surfaceAt(x).ground : surfaceAt(x, ref, null).ground;
+}
+
+// Standing on a window, about to walk into the side of a taller one: that's a wall.
+function wallAhead(nx) {
+  if (walker.on === null || surfaceAt(nx).id === walker.on) return false;
+  const c = nx + WIDTH / 2;
+  return walls.some((w) => w.id !== walker.on && c >= w.left && c < w.right && w.top > walker.level + STEP && w.bottom < walker.level + 40);
+}
+
+// Now and then, jump up (or across) onto another window within reach.
+function pickJump() {
+  if (!config.walkOnWindows || !platforms.length || panicking || scene || dragging || tv || dancing) return null;
+  const { min, max } = walkRange();
+  const options = platforms.filter((p) => {
+    const lo = Math.max(min, p.left);
+    const hi = Math.min(max, p.right - WIDTH);
+    return p.id !== walker.on && hi - lo >= 10 && Math.abs((lo + hi) / 2 - walker.x) < 900 && p.ground > walker.level + STEP;
+  });
+  if (!options.length) return null;
+  const p = options[Math.floor(Math.random() * options.length)];
+  const lo = Math.max(min, p.left);
+  const hi = Math.min(max, p.right - WIDTH);
+  return { p, x: lo + Math.random() * (hi - lo) };
+}
+
+async function jumpOnto({ p, x }) {
+  puppet = true;
+  walker.target = null;
+  const x0 = walker.x;
+  const b0 = 4 + walker.level;
+  const b1 = 4 + p.ground;
+  const dx = x - x0;
+  if (dx) walker.dir = Math.sign(dx);
+  // Crouch, then a curve whose highest point clears the higher end.
+  el.classList.add('jumping');
+  await wait(140);
+  const peak = Math.max(b0, b1) + 50 + Math.min(120, Math.abs(dx) * 0.15);
+  const c = 2 * peak - (b0 + b1) / 2;
+  await tween(450 + Math.min(500, Math.hypot(dx, b1 - b0) * 0.6), (q) => {
+    walker.x = x0 + dx * q;
+    walker.airBottom = (1 - q) * (1 - q) * b0 + 2 * (1 - q) * q * c + q * q * b1;
+  });
+  walker.airBottom = null;
+  walker.level = p.ground;
+  walker.on = p.id;
+  el.classList.remove('jumping');
+  el.classList.add('landing');
+  await wait(300);
+  el.classList.remove('landing');
+  walker.pauseUntil = performance.now() + 500 + Math.random() * 1500;
+  puppet = false;
 }
 
 // ---------- movement ----------
@@ -2625,6 +2697,11 @@ function pickTarget() {
     } else {
       walker.target = min + Math.random() * (max - min);
     }
+    return;
+  }
+  const jump = Math.random() < 0.35 ? pickJump() : null;
+  if (jump) {
+    jumpOnto(jump);
     return;
   }
   if (state === 'working') walker.target = min + Math.random() * (max - min);
@@ -2656,6 +2733,7 @@ const HOP_MS = 420;
 let segIndex = -1;
 let prevGround = 0;
 let hop = null; // { t0, from, to }
+let fall = null; // { t0, from, to, ms }: dropping off a window's edge
 
 function segmentIndex(x) {
   if (!layout) return -1;
@@ -2690,7 +2768,12 @@ function tick(t) {
     let moving = false;
     if (speed > 0 && t >= walker.pauseUntil) {
       if (walker.target === null) pickTarget();
-      if (TRAVEL[config.hat] && !panicking && !dragging && Math.abs(walker.target - walker.x) > DIG_MIN_TRIP) {
+      if (puppet) {
+        requestAnimationFrame(tick); // off on a jump
+        return;
+      }
+      // The hats' ways of travelling (digging, flying...) start from the floor.
+      if (TRAVEL[config.hat] && walker.on === null && !panicking && !dragging && Math.abs(walker.target - walker.x) > DIG_MIN_TRIP) {
         TRAVEL[config.hat](walker.target);
         requestAnimationFrame(tick);
         return;
@@ -2706,17 +2789,43 @@ function tick(t) {
         }
       } else {
         walker.dir = Math.sign(delta);
-        walker.x += walker.dir * Math.min(Math.abs(delta), speed * dt);
-        moving = true;
+        const nx = walker.x + walker.dir * Math.min(Math.abs(delta), speed * dt);
+        if (wallAhead(nx)) {
+          // Bump into the taller window and turn round.
+          walker.target = null;
+          walker.dir = -walker.dir;
+          walker.pauseUntil = t + pauseFor();
+        } else {
+          walker.x = nx;
+          moving = true;
+        }
       }
     }
     el.classList.toggle('walking', moving);
     el.classList.toggle('riding', moving && RIDES.includes(config.hat));
   }
 
-  const ground = groundAt(walker.x);
+  const surface = surfaceAt(walker.x);
+  const ground = surface.ground;
+  const wasOn = walker.on;
+  if (walker.airBottom !== null) {
+    // In the air: whatever is below now is what it'll land on.
+    walker.level = walker.airBottom - 4;
+    walker.on = null;
+    if (fall && !puppet) el.classList.remove('falling');
+    fall = null;
+  } else {
+    // Walked off a window's edge, or the window went away (closed, minimized, moved off):
+    // fall to whatever is below.
+    if (wasOn !== null && surface.id !== wasOn && ground < walker.level - 8 && !dragging) {
+      fall = { t0: t, from: walker.level, to: ground, ms: Math.max(180, Math.sqrt(walker.level - ground) * 22) };
+      el.classList.add('falling');
+    }
+    walker.level = ground;
+    walker.on = surface.id;
+  }
   const idx = segmentIndex(walker.x);
-  if (walker.airBottom === null && !dragging && idx !== -1 && segIndex !== -1 && idx !== segIndex) {
+  if (walker.airBottom === null && !dragging && wasOn === null && walker.on === null && idx !== -1 && segIndex !== -1 && idx !== segIndex) {
     hop = { t0: t, from: prevGround, to: ground };
   }
   if (idx !== -1) segIndex = idx;
@@ -2726,6 +2835,14 @@ function tick(t) {
     const p = (t - hop.t0) / HOP_MS;
     if (p >= 1) hop = null;
     else floor = hop.from + (hop.to - hop.from) * p + 44 * Math.sin(Math.PI * p);
+  } else if (fall) {
+    const p = (t - fall.t0) / fall.ms;
+    if (p >= 1) {
+      fall = null;
+      el.classList.remove('falling');
+      el.classList.add('landing');
+      setTimeout(() => el.classList.remove('landing'), 300);
+    } else floor = fall.from + (fall.to - fall.from) * p * p;
   }
   el.classList.toggle('hopping', !!hop);
 
@@ -2915,6 +3032,11 @@ window.claudetop.onMedia((m) => {
   media = m;
   updateDance();
   updateTv();
+});
+
+window.claudetop.onPlatforms((next) => {
+  platforms = next.platforms || [];
+  walls = next.walls || [];
 });
 
 window.claudetop.onLayout((next) => {

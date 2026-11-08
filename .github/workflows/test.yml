@@ -1,0 +1,42 @@
+# Linux checks that can't run on Windows: the Hyprland support against a fake Hyprland socket,
+# and walking on windows end to end on a virtual X server with real windows (screenshots are
+# kept as a workflow artifact).
+name: Tests
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Hyprland (fake compositor socket)
+        run: node test/hyprland.test.js
+      - name: Install a virtual X desktop
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb openbox xcompmgr xterm x11-utils xdotool imagemagick
+      - name: Walking on windows under X11
+        run: |
+          Xvfb :99 -screen 0 1920x1080x24 &
+          export DISPLAY=:99
+          sleep 1
+          openbox &
+          xcompmgr &
+          sleep 1
+          xterm -geometry 100x20+100+520 -T left &
+          xterm -geometry 70x16+900+300 -T right &
+          sleep 2
+          node test/x11-smoke.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: x11-screenshots
+          path: test-output/

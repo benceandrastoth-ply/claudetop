@@ -2,7 +2,9 @@
 # With lock-in mode on, a browser tab whose title matches the blocklist is reported as
 # "LOCKIN`t<hwnd>`t<windowRect>`t<tabRect>" (physical pixels "l,t,r,b"; tabRect may be empty).
 # claudetop animates, then asks for the tab to be closed by writing "close <hwnd>" to the
-# command file. main.js fills in the __PLACEHOLDERS__ before running this.
+# command file. With walking on windows on, every window you can see is reported as
+# "WINDOWS`t<hwnd>,l,t,r,b;..." (front to back, physical pixels) whenever one moves.
+# main.js fills in the __PLACEHOLDERS__ before running this.
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Add-Type -ReferencedAssemblies Accessibility @"
 using System;
@@ -70,6 +72,49 @@ public static class Tabs {
     return "";
   }
 }
+// The windows you'd see in Alt+Tab that are on screen (not minimized, maximized or on another
+// desktop), front to back, as "hwnd,l,t,r,b;" with their visible frame (no invisible borders).
+public static class Wins {
+  delegate bool EnumProc(IntPtr h, IntPtr l);
+  [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc f, IntPtr l);
+  [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
+  [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
+  [DllImport("user32.dll")] static extern bool IsZoomed(IntPtr h);
+  [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr h, uint cmd);
+  [DllImport("user32.dll")] static extern int GetWindowLong(IntPtr h, int index);
+  [DllImport("user32.dll")] static extern int GetWindowTextLength(IntPtr h);
+  [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder s, int max);
+  [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr h, int attr, out int value, int size);
+  [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr h, int attr, out Fg.Rect value, int size);
+  public static string List(uint skipPid) {
+    var sb = new StringBuilder();
+    var cls = new StringBuilder(64);
+    EnumWindows((h, l) => {
+      if (!IsWindowVisible(h) || IsIconic(h) || IsZoomed(h)) return true;
+      int ex = GetWindowLong(h, -20); // GWL_EXSTYLE
+      if ((ex & 0x80) != 0 || (ex & 0x08000000) != 0) return true; // tool window, never activates
+      if (GetWindow(h, 4) != IntPtr.Zero && (ex & 0x40000) == 0) return true; // owned popup
+      if (GetWindowTextLength(h) == 0) return true;
+      int cloaked;
+      if (DwmGetWindowAttribute(h, 14, out cloaked, 4) == 0 && cloaked != 0) return true; // other desktop
+      uint pid;
+      GetWindowThreadProcessId(h, out pid);
+      if (pid == skipPid) return true;
+      cls.Clear();
+      GetClassName(h, cls, 64);
+      var c = cls.ToString();
+      if (c == "Progman" || c == "WorkerW" || c == "Shell_TrayWnd" || c == "Shell_SecondaryTrayWnd") return true;
+      Fg.Rect r;
+      if (DwmGetWindowAttribute(h, 9, out r, 16) != 0) return true; // DWMWA_EXTENDED_FRAME_BOUNDS
+      if (r.Right - r.Left < 120 || r.Bottom - r.Top < 60) return true;
+      sb.Append(h.ToInt64()).Append(',').Append(r.Left).Append(',').Append(r.Top).Append(',')
+        .Append(r.Right).Append(',').Append(r.Bottom).Append(';');
+      return true;
+    }, IntPtr.Zero);
+    return sb.ToString();
+  }
+}
 "@
 
 # What's playing, via Windows' media controls (the volume-key popup). Prints
@@ -103,6 +148,9 @@ $lockIn = '__LOCKIN__' -eq '1'
 $blocklist = '__BLOCKLIST__'
 $browsers = '__BROWSERS__' -split ','
 $cmdFile = '__CMDFILE__'
+$walkWindows = '__WINDOWS__' -eq '1'
+$ownPid = [uint32]'__OWNPID__'
+$lastWindows = $null
 $shell = New-Object -ComObject WScript.Shell
 $cooldownUntil = [DateTime]::MinValue
 
@@ -202,6 +250,15 @@ while ($true) {
       [Console]::Out.WriteLine($m)
       [Console]::Out.Flush()
       $lastMedia = $m
+    }
+  }
+
+  if ($walkWindows) {
+    $wl = [Wins]::List($ownPid)
+    if ($wl -ne $lastWindows) {
+      [Console]::Out.WriteLine("WINDOWS`t$wl")
+      [Console]::Out.Flush()
+      $lastWindows = $wl
     }
   }
 

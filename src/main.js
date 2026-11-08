@@ -14,6 +14,10 @@ const { createBridge } = require('./phone-bridge');
 
 const isLinux = process.platform === 'linux';
 const linux = isLinux ? require('./platform-linux') : null;
+const hypr = isLinux ? require('./platform-hyprland') : { isHyprland: false };
+const IS_HYPRLAND = hypr.isHyprland;
+const IS_WSL = isLinux && /microsoft/i.test(os.release());
+const USE_SHAPE = IS_WSL || IS_HYPRLAND; // see the 'shape' message
 if (isLinux) app.commandLine.appendSwitch('enable-transparent-visuals');
 
 const REPORT_JS = path.join(__dirname, '..', 'hooks', 'report.js');
@@ -68,6 +72,23 @@ if (SETUP_FLAGS.some((f) => process.argv.includes(f)) || hatArg) {
   return;
 }
 
+// In a Wayland session Electron may have been told to run as a Wayland app (Hyprland's wiki
+// suggests ELECTRON_OZONE_PLATFORM_HINT=auto). A Wayland app can't put its window where it
+// wants or let clicks through it, so claudetop starts itself again through XWayland.
+if (isLinux && process.env.WAYLAND_DISPLAY && process.env.DISPLAY) {
+  const platform = app.commandLine.getSwitchValue('ozone-platform');
+  const hint = app.commandLine.getSwitchValue('ozone-platform-hint') || process.env.ELECTRON_OZONE_PLATFORM_HINT || '';
+  if (platform === 'wayland' || (!platform && /^(wayland|auto)$/i.test(hint))) {
+    process.env.ELECTRON_OZONE_PLATFORM_HINT = 'x11';
+    app.relaunch({
+      execPath: process.env.APPIMAGE || process.execPath, // an AppImage's own files vanish when it exits
+      args: [...process.argv.slice(1).filter((a) => !a.startsWith('--ozone-platform')), '--ozone-platform=x11'],
+    });
+    app.exit(0);
+    return;
+  }
+}
+
 const SESSIONS_DIR = path.join(os.homedir(), '.claude', 'claudetop', 'sessions');
 const CONFIG_FILE = path.join(app.getPath('userData'), 'config.json');
 const { createStats, duration } = require('./stats');
@@ -84,6 +105,7 @@ let config = {
   lockIn: false,
   panicWhenDone: false,
   roam: false, // wander over every monitor instead of staying on the chosen one
+  walkOnWindows: false, // the whole screen, standing on top of windows (not maximized ones)
   hat: 'none', // 'none' | 'hard' | 'propeller' | 'miner' | 'agent47'
   dance: 'apps', // 'off' | 'apps' (music apps only) | 'any' (anything playing, browsers too)
   tv: true, // sit down and watch a little TV while you watch videos
@@ -107,6 +129,7 @@ let media = { playing: false, app: '', artist: '', title: '' };
 let focusWatcher = null;
 let spanAll = false; // window stretched along every monitor's floor (panic run)
 let fullScreen = false; // window covering every monitor entirely (lock-in moves)
+let windowsSeen = []; // every window on screen, front to back, as DIP rects with an id
 let lockInJob = null; // { hwnd, fallback } while a lock-in animation plays
 const CMD_FILE = path.join(os.tmpdir(), 'claudetop-cmd.txt');
 
@@ -269,6 +292,9 @@ function watchFocusLinux() {
     onLockIn: (id, windowRect, tabRect) => startLockIn(id, parseRect(windowRect), parseRect(tabRect)),
     onHitman: setHitman,
     onMic: setMic,
+    onWindows: walksOnWindows() ? setWindows : null,
+    getDisplays: () => screen.getAllDisplays(),
+    ownPid: process.pid,
   });
 }
 
@@ -283,12 +309,19 @@ function watchFocus() {
     .replace('__LOCKIN__', config.lockIn ? '1' : '0')
     .replace('__BLOCKLIST__', BLOCKLIST)
     .replace('__BROWSERS__', BROWSERS.join(','))
-    .replace('__CMDFILE__', CMD_FILE);
+    .replace('__CMDFILE__', CMD_FILE)
+    .replace('__WINDOWS__', walksOnWindows() ? '1' : '0')
+    .replace('__OWNPID__', String(process.pid));
+  // The script is too long for a command line (32767 characters, base64 and UTF-16 make it
+  // about 2.7 times longer), so a tiny one reads it from stdin and runs it.
+  const bootstrap = '[Console]::InputEncoding = [Text.Encoding]::UTF8; & ([ScriptBlock]::Create([Console]::In.ReadToEnd()))';
   const watcher = spawn(
     'powershell.exe',
-    ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')],
+    ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(bootstrap, 'utf16le').toString('base64')],
     { windowsHide: true }
   );
+  watcher.stdin.on('error', () => {});
+  watcher.stdin.end(script);
   focusWatcher = watcher;
   let buffered = '';
   watcher.stdout.setEncoding('utf8');
@@ -301,6 +334,15 @@ function watchFocus() {
       if (line.startsWith('LOCKIN\t')) {
         const [, hwnd, windowRect, tabRect] = line.split('\t');
         startLockIn(hwnd, parseRect(windowRect), parseRect(tabRect));
+        continue;
+      }
+      if (line.startsWith('WINDOWS\t')) {
+        setWindows(
+          line.slice(8).split(';').filter(Boolean).map((w) => {
+            const [id, ...rect] = w.split(',');
+            return { id, ...parseRect(rect.join(',')) };
+          }).filter((w) => w.width)
+        );
         continue;
       }
       if (line.startsWith('MIC\t')) {
@@ -447,25 +489,44 @@ function targetDisplay() {
 }
 
 // A strip along the bottom of the chosen monitor, or across all of them during a panic run.
-// The renderer gets each monitor's floor so Claude stands on the right taskbar everywhere.
+// The renderer gets each monitor's floor so Claude stands on the right taskbar everywhere, and
+// on the screen's bottom edge where there's no taskbar.
 // Under WSL, Linux sees the whole screen but the Windows taskbar is drawn on top of it,
 // so stand on the taskbar instead of behind it.
 const WSL_TASKBAR = isLinux && /microsoft/i.test(os.release()) ? 48 : 0;
-const floorOf = (d) => d.workArea.y + d.workArea.height - WSL_TASKBAR;
 
+// The part of a monitor that isn't taskbar or panel. Electron can't see Hyprland's bars
+// (waybar...), so there Hyprland says how much room they take.
+function areaOf(d) {
+  if (!IS_HYPRLAND) return d.workArea;
+  const r = hypr.reservedFor(d.id);
+  return { x: d.bounds.x + r.l, y: d.bounds.y + r.t, width: d.bounds.width - r.l - r.r, height: d.bounds.height - r.t - r.b };
+}
+const floorOf = (d) => areaOf(d).y + areaOf(d).height - WSL_TASKBAR;
+
+// Walking on windows needs to know where they are: Windows' helper, Hyprland, or xprop.
+const canSeeWindows = () =>
+  process.platform === 'win32' || (isLinux && !IS_WSL && (IS_HYPRLAND || (linux.available.xprop && linux.available.xwininfo)));
+const walksOnWindows = () => !!config.walkOnWindows && canSeeWindows();
+
+let winBounds = null;
 function placeWindow() {
   const home = targetDisplay();
   const displays = spanAll || fullScreen ? screen.getAllDisplays() : [home];
-  const left = Math.min(...displays.map((d) => d.workArea.x));
-  const right = Math.max(...displays.map((d) => d.workArea.x + d.workArea.width));
+  const left = Math.min(...displays.map((d) => areaOf(d).x));
+  const right = Math.max(...displays.map((d) => areaOf(d).x + areaOf(d).width));
   const floors = displays.map(floorOf);
   const bottom = Math.max(...floors);
-  const top = fullScreen ? Math.min(...displays.map((d) => d.bounds.y)) : Math.min(...floors) - STRIP_HEIGHT;
-  win.setBounds({ x: left, y: top, width: right - left, height: bottom - top });
+  // Walking on windows: from the top of the screen down, so Claude can get onto any of them.
+  const tall = fullScreen || walksOnWindows();
+  const top = tall ? Math.min(...displays.map((d) => d.bounds.y)) : Math.min(...floors) - STRIP_HEIGHT;
+  winBounds = { x: left, y: top, width: right - left, height: bottom - top };
+  win.setBounds(winBounds);
+  if (IS_HYPRLAND) placeOnHyprland();
 
   const segment = (d) => ({
-    left: d.workArea.x - left,
-    right: d.workArea.x + d.workArea.width - left,
+    left: areaOf(d).x - left,
+    right: areaOf(d).x + areaOf(d).width - left,
     ground: bottom - floorOf(d),
   });
   const all = screen.getAllDisplays();
@@ -476,10 +537,96 @@ function placeWindow() {
     segments: displays.map(segment),
     // the whole desktop, even when the window covers only one monitor
     desktop: {
-      left: Math.min(...all.map((d) => d.workArea.x)) - left,
-      right: Math.max(...all.map((d) => d.workArea.x + d.workArea.width)) - left,
+      left: Math.min(...all.map((d) => areaOf(d).x)) - left,
+      right: Math.max(...all.map((d) => areaOf(d).x + areaOf(d).width)) - left,
     },
   });
+  sendPlatforms();
+}
+
+// Hyprland tiles new windows and ignores where they ask to go: float it, pin it to every
+// workspace and move it there through Hyprland. Until the window has appeared, keep trying.
+let hyprTries = 0;
+let hyprBusy = false;
+async function placeOnHyprland() {
+  if (hyprBusy || !win || !winBounds) return;
+  hyprBusy = true;
+  const bounds = winBounds;
+  let found = false;
+  try {
+    found = await hypr.placeOwnWindow(bounds, screen.getAllDisplays(), process.pid);
+  } catch {}
+  hyprBusy = false;
+  if (bounds !== winBounds) return placeOnHyprland(); // it moved again meanwhile
+  if (!found && hyprTries++ < 40) setTimeout(placeOnHyprland, 250);
+  if (found) hyprTries = 0;
+}
+
+// Bars can start after claudetop (both at login): check what they take now and then.
+let lastReserved = '';
+async function watchHyprlandBars() {
+  try {
+    const key = JSON.stringify(await hypr.refreshReserved(screen.getAllDisplays()));
+    if (key !== lastReserved) {
+      lastReserved = key;
+      if (win) placeWindow();
+    }
+  } catch {}
+  setTimeout(watchHyprlandBars, 3000);
+}
+
+// ---------- walking on windows ----------
+// The page gets the top edge of every window it can stand on (the parts no window in front
+// covers) and every window's outline, so it can tell a ledge from a wall.
+const HEADROOM = 120; // a window this close to the top of the screen has no room above it
+let lastPlatforms = '';
+
+function setWindows(list) {
+  windowsSeen = list;
+  sendPlatforms();
+}
+
+function sendPlatforms() {
+  if (!win || !winBounds) return;
+  const list = walksOnWindows() ? windowsSeen : [];
+  const winX = winBounds.x;
+  const bottom = winBounds.y + winBounds.height;
+  const platforms = [];
+  const walls = [];
+  const cut = (pieces, from, to) =>
+    pieces.flatMap(([l, r]) => (to <= l || from >= r ? [[l, r]] : [[l, from], [to, r]].filter(([a, b]) => b - a > 0)));
+  list.forEach((w, i) => {
+    const d = screen.getDisplayNearestPoint({ x: Math.round(w.x + w.width / 2), y: Math.round(w.y) });
+    const a = areaOf(d);
+    if (w.y - a.y < HEADROOM || w.y > floorOf(d) - 40) return; // no room above it, or down at the floor
+    let pieces = [[Math.max(w.x, a.x), Math.min(w.x + w.width, a.x + a.width)]];
+    for (const front of list.slice(0, i)) {
+      if (front.y <= w.y + 2 && front.y + front.height > w.y - 2) pieces = cut(pieces, front.x, front.x + front.width);
+    }
+    for (const [l, r] of pieces) {
+      if (r - l >= 100) platforms.push({ id: w.id, left: Math.round(l - winX), right: Math.round(r - winX), ground: Math.round(bottom - w.y) });
+    }
+    walls.push({
+      id: w.id,
+      left: Math.round(w.x - winX),
+      right: Math.round(w.x + w.width - winX),
+      top: Math.round(bottom - w.y),
+      bottom: Math.round(bottom - w.y - w.height),
+    });
+  });
+  const key = JSON.stringify([platforms, walls]);
+  if (key === lastPlatforms) return;
+  lastPlatforms = key;
+  win.webContents.send('platforms', { platforms, walls });
+}
+
+function setWalkOnWindows(on) {
+  config.walkOnWindows = on;
+  saveConfig();
+  if (!on) windowsSeen = [];
+  restartFocusWatcher(); // the helper only lists windows while this is on
+  pushConfig();
+  if (win) placeWindow();
 }
 
 function createWindow() {
@@ -500,11 +647,12 @@ function createWindow() {
   });
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true);
-  if (IS_WSL) win.setShape([{ x: 0, y: 0, width: 1, height: 1 }]); // until the page reports its shapes
+  if (USE_SHAPE) win.setShape([{ x: 0, y: 0, width: 1, height: 1 }]); // until the page reports its shapes
   else win.setIgnoreMouseEvents(true, { forward: true });
   placeWindow();
   win.loadFile(path.join(__dirname, 'index.html'));
   win.webContents.on('did-finish-load', () => {
+    lastPlatforms = '';
     placeWindow(); // resend the layout now that the page can hear it
     pushConfig();
     win.webContents.send('focus', focus);
@@ -659,6 +807,13 @@ function menuTemplate() {
       checked: config.roam,
       enabled: screen.getAllDisplays().length > 1,
       click: (item) => setFlag('roam', item.checked),
+    },
+    {
+      label: 'Walk on top of windows (uses the whole screen)',
+      type: 'checkbox',
+      checked: walksOnWindows(),
+      enabled: canSeeWindows(),
+      click: (item) => setWalkOnWindows(item.checked),
     },
     { type: 'separator' },
     {
@@ -955,13 +1110,13 @@ ipcMain.on('set-ignore-mouse', (_e, ignore) => {
   if (win && !isLinux) win.setIgnoreMouseEvents(ignore, { forward: true });
 });
 
-// WSL (WSLg) hides click-through windows completely. There, the window is instead cut down to
-// the shapes the page reports (Claude, its bubble, flying hats, the TV...), so the rest of the
-// screen stays clickable.
-const IS_WSL = isLinux && /microsoft/i.test(os.release());
+// WSL (WSLg) hides click-through windows completely, and under Hyprland Electron can't follow
+// the mouse over Wayland apps. There, the window is instead cut down to the shapes the page
+// reports (Claude, its bubble, flying hats, the TV...), so the rest of the screen stays
+// clickable.
 let lastShape = '';
 ipcMain.on('shape', (_e, rects) => {
-  if (!win || !IS_WSL) return;
+  if (!win || !USE_SHAPE) return;
   const shape = rects.map((r) => ({
     x: Math.max(0, Math.floor(r.x)), y: Math.max(0, Math.floor(r.y)),
     width: Math.ceil(r.w), height: Math.ceil(r.h),
@@ -977,7 +1132,7 @@ ipcMain.on('claude-rect', (_e, rect) => {
 });
 
 function watchCursorLinux() {
-  if (IS_WSL) return; // the window shape does the job there
+  if (USE_SHAPE) return; // the window shape does the job there
   setInterval(() => {
     if (!win || !claudeRect) return;
     const p = screen.getCursorScreenPoint();
@@ -1060,6 +1215,7 @@ if (!app.requestSingleInstanceLock()) {
       watchCursorLinux();
       firstRunLinux();
     }
+    if (IS_HYPRLAND) watchHyprlandBars();
   });
   app.on('window-all-closed', () => app.quit());
   app.on('before-quit', () => {

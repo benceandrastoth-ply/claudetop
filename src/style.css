@@ -761,6 +761,9 @@ svg .suit .barcode, svg .suit .brow47 { fill: var(--ink); }
 /* hopping onto another monitor */
 #claude.hopping .legs-a, #claude.hopping .legs-b { transform: translateY(-1.5px); animation: none; }
 #claude.hopping .bob { animation: none; transform: scaleY(1.06); }
+/* jumping up onto a window */
+#claude.jumping .legs-a, #claude.jumping .legs-b { transform: translateY(-1.5px); animation: none; }
+#claude.jumping .bob { animation: none; transform: scaleY(1.06); }
 
 /* ---------- speech bubble ---------- */
 .bubble {

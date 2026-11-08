@@ -1,13 +1,16 @@
 // Linux versions of the Windows-only pieces:
 //   - which window is in front (xprop), what's playing (playerctl), closing a tab (xdotool)
 //   - start at login (~/.config/autostart)
-// Works on X11 sessions and on Wayland for apps running through XWayland. Missing tools just
-// switch the matching feature off; installHint() says how to get them.
+//   - where every window is, so Claude can walk on top of them
+// Works on X11 sessions and on Wayland for apps running through XWayland. On Hyprland the
+// compositor itself answers instead (platform-hyprland.js), and sees Wayland apps too. Missing
+// tools just switch the matching feature off; installHint() says how to get them.
 
 const { execFile, execFileSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const hypr = require('./platform-hyprland');
 
 const TOOLS = ['xprop', 'xwininfo', 'xdotool', 'playerctl'];
 
@@ -32,7 +35,9 @@ const available = Object.fromEntries(TOOLS.map((t) => [t, has(t)]));
 // How to install whatever is missing on this distribution ("On Arch:\nsudo pacman -S ..."),
 // or '' when nothing is.
 function installHint() {
-  const missing = TOOLS.filter((t) => !available[t]);
+  // On Hyprland the compositor answers what xprop, xwininfo and xdotool are for.
+  const needed = hypr.isHyprland ? ['playerctl'] : TOOLS;
+  const missing = needed.filter((t) => !available[t]);
   if (!missing.length) return '';
   const pm = PACKAGES[Object.keys(PACKAGES).find(has) || 'apt'];
   const pkgs = [...new Set(missing.map((t) => pm[t] || t))];
@@ -62,7 +67,11 @@ const propNumber = (out, prop) => {
   return m ? Number(m[1]) : 0;
 };
 
-async function activeWindow() {
+async function activeWindow(getDisplays) {
+  if (hypr.isHyprland) {
+    const w = await hypr.activeWindow(getDisplays());
+    return w && { ...w, name: w.pid > 0 ? processName(w.pid) : w.className };
+  }
   const root = await run('xprop', ['-root', '_NET_ACTIVE_WINDOW']);
   const id = /window id # (0x[0-9a-f]+)/i.exec(root);
   if (!id || id[1] === '0x0') return null;
@@ -84,6 +93,72 @@ async function windowRect(id) {
   const w = n('Width');
   const h = n('Height');
   return [x, y, w, h].every(Number.isFinite) ? `${x},${y},${x + w},${y + h}` : '';
+}
+
+// Every normal window on the current desktop, front to back, in X11 pixels:
+// [{ id, x, y, width, height }] with the window manager's title bar, without GTK's shadows.
+async function listWindowsX11(ownPid) {
+  const root = await run('xprop', ['-root', '_NET_CLIENT_LIST_STACKING', '_NET_CURRENT_DESKTOP']);
+  const list = /_NET_CLIENT_LIST_STACKING\(WINDOW\): window id # (.*)$/m.exec(root);
+  if (!list) return [];
+  const ids = list[1].split(',').map((s) => s.trim()).filter(Boolean);
+  const desktop = propNumber(root, '_NET_CURRENT_DESKTOP');
+  const tree = await run('xwininfo', ['-root', '-tree'], 3000);
+  const geometry = new Map();
+  for (const line of tree.split('\n')) {
+    // 0x3c00007 "title": ("xterm" "XTerm")  499x316+0+0  +10+40   (the last pair is absolute)
+    const m = /^\s*(0x[0-9a-f]+)\s.*\s(\d+)x(\d+)[+-]-?\d+[+-]-?\d+\s+\+?(-?\d+)\+?(-?\d+)\s*$/i.exec(line);
+    if (m) geometry.set(parseInt(m[1], 16), { x: +m[4], y: +m[5], width: +m[2], height: +m[3] });
+  }
+  const numbers = (out, prop) => {
+    const m = new RegExp('^' + prop + '\\([^)]*\\) = ([\\d, ]+)$', 'm').exec(out);
+    return m ? m[1].split(',').map(Number) : null;
+  };
+  const windows = await Promise.all(
+    ids.map(async (id) => {
+      const g = geometry.get(parseInt(id, 16));
+      if (!g) return null;
+      const props = await run('xprop', [
+        '-id', id, '_NET_WM_STATE', '_NET_WM_DESKTOP', '_NET_WM_WINDOW_TYPE', '_NET_WM_PID', '_NET_FRAME_EXTENTS', '_GTK_FRAME_EXTENTS',
+      ]);
+      if (/_NET_WM_STATE_(HIDDEN|FULLSCREEN)/.test(props)) return null;
+      if (/_NET_WM_STATE_MAXIMIZED_VERT/.test(props) && /_NET_WM_STATE_MAXIMIZED_HORZ/.test(props)) return null;
+      const type = /_NET_WM_WINDOW_TYPE\(ATOM\) = ([^,\n]+)/.exec(props);
+      if (type && !/_(NORMAL|DIALOG)$/.test(type[1].trim())) return null;
+      const d = numbers(props, '_NET_WM_DESKTOP');
+      if (d && d[0] !== desktop && d[0] !== 0xffffffff) return null;
+      if (ownPid && propNumber(props, '_NET_WM_PID') === ownPid) return null;
+      const r = { id, ...g };
+      const frame = numbers(props, '_NET_FRAME_EXTENTS'); // left, right, top, bottom
+      if (frame && frame.length === 4) {
+        r.x -= frame[0];
+        r.y -= frame[2];
+        r.width += frame[0] + frame[1];
+        r.height += frame[2] + frame[3];
+      }
+      const shadow = numbers(props, '_GTK_FRAME_EXTENTS');
+      if (shadow && shadow.length === 4) {
+        r.x += shadow[0];
+        r.y += shadow[2];
+        r.width -= shadow[0] + shadow[1];
+        r.height -= shadow[2] + shadow[3];
+      }
+      return r;
+    })
+  );
+  return windows.filter(Boolean).reverse(); // the stacking list goes back to front
+}
+
+// Every window, front to back, in Electron's coordinates. X11 counts real pixels, Electron
+// counts scaled ones.
+async function listWindows(getDisplays, ownPid) {
+  const displays = getDisplays();
+  if (hypr.isHyprland) return hypr.listWindows(displays, ownPid);
+  if (!available.xprop || !available.xwininfo) return [];
+  const scale = (displays[0] && displays[0].scaleFactor) || 1;
+  return (await listWindowsX11(ownPid)).map((r) => ({
+    id: r.id, x: r.x / scale, y: r.y / scale, width: r.width / scale, height: r.height / scale,
+  }));
 }
 
 async function nowPlaying() {
@@ -121,7 +196,12 @@ async function micInUse() {
   return out.trim().length > 0;
 }
 
-function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn, onHitman = () => {}, onMic = () => {} }) {
+// With onWindows, it also reports every window (Electron coordinates, front to back) twice a second.
+function startWatcher({
+  lockIn, blocklist, browsers, onFocus, onMedia, onLockIn, onHitman = () => {}, onMic = () => {},
+  onWindows = null, getDisplays = () => [], ownPid = 0,
+}) {
+  const canSeeFocus = hypr.isHyprland || available.xprop;
   let lastHitman = null;
   let lastMic = null;
   const blockRe = new RegExp(blocklist, 'i');
@@ -130,14 +210,15 @@ function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn,
   let lastRect = '';
   let lastWindow = '';
   let lastMedia = '';
+  let lastWindows = '';
   let cooldownUntil = 0;
   let tick = 0;
 
   async function loop() {
     if (stopped) return;
     tick++;
-    if (available.xprop) {
-      const w = await activeWindow();
+    if (canSeeFocus) {
+      const w = await activeWindow(getDisplays);
       // No X11 window in front: a native Wayland app, or (under WSL) a Windows app. Say we
       // can't tell, so "done" times out instead of waiting for a window we'll never see.
       if (!w && lastFocus !== 'unknown') {
@@ -147,7 +228,8 @@ function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn,
       if (w) {
         // Its size and position (game mode spots fullscreen windows): on every switch, and
         // once a second in case it goes fullscreen.
-        if (available.xwininfo && (w.id !== lastWindow || tick % 4 === 0)) lastRect = await windowRect(w.id);
+        if (w.rect !== undefined) lastRect = w.rect;
+        else if (available.xwininfo && (w.id !== lastWindow || tick % 4 === 0)) lastRect = await windowRect(w.id);
         lastWindow = w.id;
         const key = `${w.pid}\t${w.name}\t${w.title}\t${lastRect}`;
         if (key !== lastFocus) {
@@ -155,10 +237,19 @@ function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn,
           onFocus({ pid: w.pid, name: w.name, title: w.title, rect: lastRect, available: true });
         }
         const isBrowser = browsers.some((b) => w.name.toLowerCase().startsWith(b));
-        if (lockIn && available.xdotool && isBrowser && Date.now() > cooldownUntil && blockRe.test(w.title)) {
+        const canClose = hypr.isHyprland || available.xdotool;
+        if (lockIn && canClose && isBrowser && Date.now() > cooldownUntil && blockRe.test(w.title)) {
           cooldownUntil = Date.now() + 12000; // claudetop is busy with its animation
-          onLockIn(w.id, available.xwininfo ? await windowRect(w.id) : '', '');
+          onLockIn(w.id, w.rect !== undefined ? w.rect : available.xwininfo ? await windowRect(w.id) : '', '');
         }
+      }
+    }
+    if (onWindows && tick % 2 === 0) {
+      const list = await listWindows(getDisplays, ownPid);
+      const key = JSON.stringify(list);
+      if (key !== lastWindows && !stopped) {
+        lastWindows = key;
+        onWindows(list);
       }
     }
     if (tick % 20 === 1) {
@@ -185,7 +276,7 @@ function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn,
   }
 
   // Without xprop there's no way to tell where you're looking: say so, so "done" doesn't wait forever.
-  if (!available.xprop) onFocus({ pid: 0, name: '', title: '', available: false });
+  if (!canSeeFocus) onFocus({ pid: 0, name: '', title: '', available: false });
   loop();
 
   return {
@@ -194,6 +285,12 @@ function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn,
     },
     // Bring up the first of these processes that has a visible window.
     async focusPids(pids) {
+      if (hypr.isHyprland) {
+        const clients = (await hypr.json('clients')) || [];
+        const pid = pids.find((p) => clients.some((c) => c.pid === p && c.mapped));
+        if (pid) await hypr.focusPid(pid);
+        return;
+      }
       if (!available.xdotool) return;
       for (const pid of pids) {
         const ids = (await run('xdotool', ['search', '--onlyvisible', '--pid', String(pid)])).split('\n').filter(Boolean);
@@ -206,7 +303,8 @@ function startWatcher({ lockIn, blocklist, browsers, onFocus, onMedia, onLockIn,
     // Ctrl+W, but only if that same window is still in front.
     async closeTab(id) {
       cooldownUntil = Date.now() + 1500;
-      const w = available.xprop ? await activeWindow() : null;
+      const w = canSeeFocus ? await activeWindow(getDisplays) : null;
+      if (w && w.id === id && hypr.isHyprland) return hypr.sendCtrlW(id);
       if (w && w.id === id && available.xdotool) await run('xdotool', ['key', '--clearmodifiers', 'ctrl+w']);
     },
   };
